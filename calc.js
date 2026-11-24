@@ -26,16 +26,19 @@ function positive(value) {
   return Number.isSafeInteger(Number(value)) && Number(value) > 0;
 }
 
+function usesPurchaseTotal(node, units) {
+  return node.totalPrice !== undefined && positive(node.totalQty) && Number(node.totalQty) === units;
+}
+
 function plan(items, runs, override = {}) {
   let cost = 0;
   const purchases = [];
   for (const node of items) {
     const units = Number(node.qty) * runs;
     if (!node.name.trim() || !positive(node.qty) || !positive(units)) return null;
-    const price = copper(node.price);
-    const buyCost = price * units;
+    const buyCost = usesPurchaseTotal(node, units) ? copper(node.totalPrice) : copper(node.price) * units;
     const buy = Number.isSafeInteger(buyCost)
-      ? {cost: buyCost, purchases: [{name: node.name, units, price, cost: buyCost}]} : null;
+      ? {cost: buyCost, purchases: [{name: node.name, units, cost: buyCost}]} : null;
     const craft = node.children.length && positive(node.yield)
       ? plan(node.children, Math.ceil(units / Number(node.yield)), override) : null;
     const mode = node.id === override.id ? override.mode : override.ancestors?.includes(node.id) ? 'craft' : node.mode;

@@ -36,7 +36,7 @@ function save() {
 }
 
 function field(label, value, fieldName, id = '') {
-  const numeric = ['qty', 'yield', 'batch', 'fee'].includes(fieldName);
+  const numeric = ['qty', 'yield', 'batch', 'fee', 'totalQty'].includes(fieldName);
   return `<label>${label}<input data-field="${fieldName}" data-id="${id}" value="${escapeHtml(value)}"
     ${numeric ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
 }
@@ -63,8 +63,13 @@ function ingredient(node, depth = 0) {
     ${field('Buy price each', node.price, 'price', node.id)}</div>
     <div class="actions">
       ${recipe ? sourceControl(node) : `<button data-action="child" data-id="${node.id}">Add crafting recipe</button>`}
+      <button data-action="total" id="total-action-${node.id}" data-id="${node.id}">${node.totalPrice === undefined ? 'Use purchase total' : 'Clear purchase total'}</button>
       <button class="remove" data-action="remove" data-id="${node.id}">Remove</button>
     </div>
+    ${node.totalPrice === undefined ? '' : `<div class="bulk-price"><div class="bulk-fields">
+      ${field('Purchase quantity', node.totalQty, 'totalQty', node.id)}
+      ${field('Total price for that quantity', node.totalPrice, 'totalPrice', node.id)}</div>
+      <p class="hint" id="total-note-${node.id}"></p></div>`}
     ${branch}
     ${recipe ? `<div class="comparison" id="cost-${node.id}"></div>` : ''}
   </article>`;
@@ -99,22 +104,33 @@ function sourceVerdict(node, difference) {
 
 function updateBranchCosts(items, runs, verdicts) {
   for (const node of items) {
+    const required = runs * Number(node.qty);
+    $('total-action-' + node.id).dataset.required = positive(required) ? required : '';
+    if (node.totalPrice !== undefined) {
+      const note = $('total-note-' + node.id);
+      if (usesPurchaseTotal(node, required)) {
+        const cost = copper(node.totalPrice);
+        note.textContent = Number.isSafeInteger(cost) ? `Buying ${required} here costs ${money(cost)} in total.` : 'Enter the AH total in gold, silver or copper.';
+      } else {
+        note.textContent = `This recipe needs ${positive(required) ? required : '—'} for the batch. The unit price applies until the purchase quantity matches.`;
+      }
+    }
     if (!node.children.length) continue;
     const name = node.name.trim() || 'reagent';
     const parts = node.children.map(child => `${child.qty || '—'} × ${child.name.trim() || 'material'}`);
     $('formula-' + node.id).textContent = `${parts.join(' + ')} → ${node.yield || '—'} × ${name}`;
-    const required = runs * Number(node.qty);
     const buy = plan([node], runs, {id: node.id, mode: 'buy'});
     const craft = plan([node], runs, {id: node.id, mode: 'craft'});
     const difference = buy && craft ? buy.cost - craft.cost : null;
     const verdict = sourceVerdict(node, difference);
     verdicts.set(node.id, verdict);
-    const output = Number(node.yield);
-    const outputLabel = positive(output) ? output : '—';
-    const buyQuote = positive(output) ? copper(node.price) * output : NaN;
-    const craftQuote = positive(output) ? plan(node.children, 1) : null;
-    $('cost-' + node.id).innerHTML = `${verdict}<div class="quotes"><div>Buy ${outputLabel} ready-made<strong>${Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
-      <div>Craft ${outputLabel} from materials<strong>${craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>`;
+    const hasTotal = node.totalPrice !== undefined || [...nodes(node.children)].some(({node: child}) => child.totalPrice !== undefined);
+    const quantity = hasTotal ? required : Number(node.yield);
+    const label = positive(quantity) ? quantity : '—';
+    const buyQuote = hasTotal ? buy?.cost : copper(node.price) * quantity;
+    const craftQuote = hasTotal ? craft : plan(node.children, 1);
+    $('cost-' + node.id).innerHTML = `${verdict}<div class="quotes"><div>Buy ${label} ready-made<strong>${positive(quantity) && Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
+      <div>Craft ${label} from materials<strong>${positive(quantity) && craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>`;
     updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)), verdicts);
   }
 }
@@ -280,6 +296,21 @@ $('ingredients').onclick = event => {
   const s = active();
   const all = [...nodes(s.ingredients)].map(({node}) => node);
   const node = all.find(node => node.id === id);
+  if (action === 'total') {
+    const adding = node.totalPrice === undefined;
+    if (adding) {
+      node.totalQty = event.target.dataset.required;
+      node.totalPrice = '';
+    } else {
+      delete node.totalQty;
+      delete node.totalPrice;
+    }
+    save();
+    render();
+    const focus = adding ? document.querySelector(`input[data-id="${id}"][data-field="totalPrice"]`) : $('total-action-' + id);
+    focus.focus();
+    return;
+  }
   if (action === 'child') {
     node.folded = false;
     add(node.children);
@@ -353,6 +384,7 @@ function previewPrices() {
       <td>${escapeHtml(target.owner[target.field]) || '—'}</td><td>${target.price}</td></tr>`).join('');
     preview.innerHTML = `<p><b>${escapeHtml(shuffle.name || 'Current shuffle')}</b></p>
       ${entries ? `<table><thead><tr><th>Item</th><th>Current</th><th>Imported</th></tr></thead><tbody>${entries}</tbody></table>` : '<p>No matching prices. Check the item names in this shuffle.</p>'}
+      ${targets.some(t => t.owner.totalPrice !== undefined) ? '<p class="hint">This updates unit prices. A purchase total takes priority for its exact quantity.</p>' : ''}
       ${unused.length ? `<p class="hint">Skipped items: ${escapeHtml(unused.join(', '))}.</p>` : ''}
       ${skipped ? `<p class="hint">Invalid rows skipped: ${skipped}.</p>` : ''}`;
     button.disabled = targets.length === 0;

@@ -67,6 +67,7 @@
       const typical = summarize({...proposed, sale:money(usual)});
       if (typical) message += ` At the historical reference price of ${money(usual)}, profit is ${money(Math.floor(typical.profit / typical.units))} per sale.`;
     }
+    if (targets(proposed).some(t => t.owner.totalPrice !== undefined)) message += ' Purchase totals take priority for their exact quantities.';
     $('market-profit').textContent = message;
   }
 
