@@ -41,95 +41,72 @@ function field(label, value, fieldName, id = '') {
     ${numeric ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
 }
 
-let recipeId = null;
-
-function context() {
-  const s = active();
-  const entries = [...nodes(s.ingredients)];
-  const entry = entries.find(({node}) => node.id === recipeId);
-  const parents = entry ? [...entry.ancestors, recipeId].map(id => entries.find(({node}) => node.id === id).node) : [];
-  let runs = Number(s.batch);
-  for (const parent of parents) runs = Math.ceil(runs * Number(parent.qty) / Number(parent.yield));
-  return {parent: entry?.node, parents, runs, items: entry?.node.children ?? s.ingredients};
-}
-
 function sourceControl(node) {
   return `<label class="source">Use<select data-field="mode" data-id="${node.id}">
       ${[['auto','Cheapest available'],['buy','Buy from AH'],['craft','Craft it']].map(([value,label]) =>
       `<option value="${value}" ${node.mode === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>`;
 }
 
-function ingredient(node) {
+function ingredient(node, depth = 0) {
   const recipe = node.children.length > 0;
-  return `<article class="ingredient" aria-label="${escapeHtml(node.name || 'New reagent')}">
-    <div class="ingredient-fields">${field('Reagent', node.name, 'name', node.id)}
-    ${field('Qty needed', node.qty, 'qty', node.id)}
+  const name = escapeHtml(node.name || 'New reagent');
+  const branch = recipe ? `<details class="subrecipe" data-branch="${node.id}" ${node.folded ? '' : 'open'}>
+    <summary>Crafting recipe <span class="formula" id="formula-${node.id}"></span></summary>
+    <div class="branch-body">
+      ${field('Units this recipe makes', node.yield, 'yield', node.id)}
+      ${node.children.map(child => ingredient(child, depth + 1)).join('')}
+      <button data-action="child" data-id="${node.id}">+ Add material</button>
+    </div></details>` : '';
+  return `<article class="ingredient" id="row-${node.id}" aria-label="${name}">
+    <div class="ingredient-fields">${field(depth ? 'Crafting material' : 'Reagent', node.name, 'name', node.id)}
+    ${field(depth ? 'Qty per recipe' : 'Qty needed', node.qty, 'qty', node.id)}
     ${field('Buy price each', node.price, 'price', node.id)}</div>
     <div class="actions">
-    ${recipe ? sourceControl(node) : ''}
-    <button data-action="open" data-id="${node.id}">${recipe ? 'Open recipe' : 'Add crafting recipe'}</button>
-    <button class="remove" data-action="remove" data-id="${node.id}">Remove</button></div>
-    ${recipe ? `<p class="decision" id="cost-${node.id}"></p>` : ''}</article>`;
-}
-
-function navigateRecipe(id) {
-  recipeId = id;
-  renderRecipe();
-  $('parent-name').focus();
+      ${recipe ? sourceControl(node) : `<button data-action="child" data-id="${node.id}">Add crafting recipe</button>`}
+      <button class="remove" data-action="remove" data-id="${node.id}">Remove</button>
+    </div>
+    ${branch}
+    ${recipe ? `<div class="comparison" id="cost-${node.id}"></div>` : ''}
+  </article>`;
 }
 
 function renderRecipe() {
   const s = active();
-  const {parent, parents, items} = context();
-  const trail = [{id: '', name: s.output || 'Finished item'}, ...parents];
-  $('path').innerHTML = parent ? trail.slice(0, -1).map(n =>
-    `<button data-parent="${n.id}">${escapeHtml(n.name || 'Unnamed reagent')}</button><span aria-hidden="true"> › </span>`).join('') + 'Reagent recipe' : 'Finished item';
-  $('parent-name').textContent = (parent ? parent.name : s.output) || (parent ? 'Unnamed reagent' : 'Finished item');
-  $('yield-line').innerHTML = field('Items made by one craft', (parent || s).yield, 'yield', parent?.id);
-  $('ingredients').innerHTML = items.map(ingredient).join('') || '<p class="hint">Add the first reagent used to make this item.</p>';
-  $('back').hidden = !parent;
-  $('parent-source').hidden = !parent;
-  $('parent-source').innerHTML = parent ? sourceControl(parent) + '<div id="parent-cost"></div>' : '';
+  $('parent-name').textContent = s.output || 'Finished item';
+  $('yield-line').innerHTML = field('Items made by one craft', s.yield, 'yield');
+  $('ingredients').innerHTML = s.ingredients.map(node => ingredient(node)).join('') || '<p class="hint">Add the first reagent used to make this item.</p>';
   updateCosts();
 }
 
-function updateCosts() {
-  const {items, runs, parents, parent} = context();
-  if (parent) {
-    let parentRuns = Number(active().batch);
-    for (const n of parents.slice(0,-1)) parentRuns = Math.ceil(parentRuns * Number(n.qty) / Number(n.yield));
-    const required = parentRuns * Number(parent.qty);
-    const buy = plan([parent], parentRuns, {id: parent.id, mode: 'buy'});
-    const craft = plan([parent], parentRuns, {id: parent.id, mode: 'craft'});
-    const savings = craft && buy ? Math.abs(buy.cost - craft.cost) : null;
-    const verdict = savings === null ? 'Enter the missing prices to compare both sources.'
-      : savings === 0 ? 'Both sources cost the same.'
-      : (buy.cost < craft.cost ? 'Buying' : 'Crafting') + ' saves ' + money(savings);
-    $('parent-cost').innerHTML = `<p class="demand">Cost to supply ${positive(required) ? required : '—'} × ${escapeHtml(parent.name || 'reagent')}</p>
-      <div class="quotes"><div>Buy from AH<strong>${buy ? money(buy.cost) : 'Needs price'}</strong></div>
-      <div>Craft from reagents<strong>${craft ? money(craft.cost) : 'Needs prices'}</strong></div></div>
-      <p class="verdict">${verdict}</p>`;
-  }
-  for (const node of items.filter(n => n.children.length)) {
-    const entry = $('cost-' + node.id);
-    if (!entry) continue;
+function updateBranchCosts(items, runs) {
+  for (const node of items) {
+    if (!node.children.length) continue;
+    const name = node.name.trim() || 'reagent';
+    const parts = node.children.map(child => `${child.qty || '—'} × ${child.name.trim() || 'material'}`);
+    $('formula-' + node.id).textContent = `${parts.join(' + ')} → ${node.yield || '—'} × ${name}`;
+    const required = runs * Number(node.qty);
     const buy = plan([node], runs, {id: node.id, mode: 'buy'});
     const craft = plan([node], runs, {id: node.id, mode: 'craft'});
-    const buyWins = buy && (!craft || buy.cost <= craft.cost);
-    const route = node.mode === 'auto' ? (buyWins ? 'buy' : 'craft') : node.mode;
-    const chosen = route === 'buy' ? buy : craft;
-    entry.textContent = `For this batch · Buy: ${buy ? money(buy.cost) : 'needs price'} · Craft: ${craft ? money(craft.cost) : 'needs recipe prices'} · ${chosen ? (route === 'buy' ? 'Buying' : 'Crafting') : 'Incomplete'}`;
+    const difference = buy && craft ? buy.cost - craft.cost : null;
+    let verdict = 'Enter the missing prices to compare.';
+    if (difference === 0) verdict = 'Both sources cost the same.';
+    else if (difference !== null) verdict = `${difference > 0 ? 'Crafting' : 'Buying'} saves ${money(Math.abs(difference))}.`;
+    const output = Number(node.yield);
+    const outputLabel = positive(output) ? output : '—';
+    const buyQuote = positive(output) ? copper(node.price) * output : NaN;
+    const craftQuote = positive(output) ? plan(node.children, 1) : null;
+    $('cost-' + node.id).innerHTML = `<div class="quotes"><div>Buy ${outputLabel} ready-made<strong>${Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
+      <div>Craft ${outputLabel} from materials<strong>${craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>
+      <p class="verdict">For ${positive(required) ? required : '—'} × ${escapeHtml(name)}: ${verdict}</p>`;
+    updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)));
   }
-  $('setup-summary').textContent = `${active().batch || '—'} crafts · ${active().sale || 'Set sale price'} each`;
 }
 
-$('back').onclick = () => {
-  const {parents} = context();
-  navigateRecipe(parents.at(-2)?.id || null);
-};
-$('path').onclick = event => {
-  if (event.target.matches('button')) navigateRecipe(event.target.dataset.parent || null);
-};
+function updateCosts() {
+  const s = active();
+  updateBranchCosts(s.ingredients, Number(s.batch));
+  $('setup-summary').textContent = `${s.batch || '—'} crafts · ${s.sale || 'Set sale price'} each`;
+}
 
 function *nodes(items, ancestors = []) {
   for (const node of items) {
@@ -197,10 +174,8 @@ function edit(event) {
   if (!node) return;
   node[field] = event.target.value;
   save();
-  if (!id && field === 'output') {
-    if (recipeId) $('path').querySelector('button').textContent = node.output || 'Finished item';
-    else $('parent-name').textContent = node.output || 'Finished item';
-  }
+  if (!id && field === 'output') $('parent-name').textContent = node.output || 'Finished item';
+  if (id && field === 'name') $('row-' + id).setAttribute('aria-label', node.name || 'New reagent');
   updateCosts();
   if (!id && field === 'name') renderMenu();
   results();
@@ -231,9 +206,8 @@ $('view').onclick = () => {
 };
 
 document.addEventListener('input', edit);
-$('saved').onchange = event => { recipeId = null; state.active = event.target.value; save(); render(); };
+$('saved').onchange = event => { state.active = event.target.value; save(); render(); };
 function append(shuffle) {
-  recipeId = null;
   state.shuffles.push(shuffle);
   state.active = shuffle.id;
   save();
@@ -248,7 +222,6 @@ $('duplicate').onclick = () => {
 };
 $('delete').onclick = () => {
   if (!confirm(`Delete “${active().name || 'Untitled shuffle'}”?`)) return;
-  recipeId = null;
   state.shuffles = state.shuffles.filter(shuffle => shuffle.id !== active().id);
   if (!state.shuffles.length) state.shuffles.push(newShuffle());
   state.active = state.shuffles[0].id;
@@ -262,16 +235,26 @@ function add(list) {
   render();
   document.querySelector(`input[data-id="${node.id}"]`).focus();
 }
-$('add').onclick = () => add(context().items);
+$('add').onclick = () => add(active().ingredients);
 $('ingredients').onclick = event => {
+  const summary = event.target.closest('.subrecipe > summary');
+  if (summary) {
+    event.preventDefault();
+    const details = summary.parentElement;
+    const entry = [...nodes(active().ingredients)].find(({node}) => node.id === details.dataset.branch);
+    details.open = !details.open;
+    entry.node.folded = !details.open;
+    save();
+    return;
+  }
   const {action, id} = event.target.dataset;
   if (!action) return;
   const s = active();
   const all = [...nodes(s.ingredients)].map(({node}) => node);
   const node = all.find(node => node.id === id);
-  if (action === 'open') {
-    navigateRecipe(id);
-    if (!node.children.length) add(node.children);
+  if (action === 'child') {
+    node.folded = false;
+    add(node.children);
     return;
   }
   if (node.children.length && !confirm(`Remove ${node.name || 'this reagent'} and its crafting recipe?`)) return;
