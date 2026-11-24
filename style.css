@@ -92,3 +92,10 @@ thead{color:var(--muted)}
   .subrecipe .subrecipe .subrecipe { border-right: 0; }
   .subrecipe .subrecipe .branch-body, .subrecipe .subrecipe .ingredient { padding-inline: 2px; }
 }
+#price-dialog { width:min(570px,calc(100% - 24px)); max-height:85vh; overflow:auto; padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--paper); color:var(--ink); }
+#price-dialog::backdrop { background:#132e27aa; }
+#price-dialog label { margin-top:14px; }
+#price-csv { width:100%; box-sizing:border-box; resize:vertical; margin:4px 0 10px; border:1px solid #a5b5aa; border-radius:6px; padding:8px; font: .85rem/1.5 ui-monospace,monospace; }
+.import-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+#apply-prices:disabled { opacity:.5; cursor:default; }
+#import-status { color:var(--forest); margin-bottom:12px; }

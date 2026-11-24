@@ -9,7 +9,16 @@
 <body>
 <header><div class="shell mast"><h1>WoW Shuffle Calculator</h1><span>Recipes save in this browser</span></div></header>
 <main class="shell">
-<nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete</button><button id="view" class="primary">Show results</button></nav>
+<nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
+<dialog id="price-dialog" aria-labelledby="import-title">
+<form method="dialog"><h2 id="import-title">Import Auctionator prices</h2>
+<p class="hint">In Auctionator’s Shopping tab, run your list and copy <b>Export Results</b> from below the results table.</p>
+<label for="price-csv">Paste exported results</label>
+<textarea id="price-csv" rows="5" spellcheck="false" autofocus></textarea>
+<div id="price-preview"></div>
+<div class="import-actions"><button value="cancel">Cancel</button><button id="apply-prices" type="button" class="primary" disabled>Apply prices</button></div>
+</form></dialog>
+<p id="import-status" role="status" hidden></p>
 <p id="storage" role="status" hidden></p>
 <div class="layout"><div class="editor">
 <details id="setup"><summary>Sale &amp; batch settings <small id="setup-summary"></small></summary>

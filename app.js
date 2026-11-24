@@ -267,3 +267,89 @@ $('ingredients').onclick = event => {
 };
 save();
 render();
+
+// Auctionator quotes text columns and writes unit prices as integer copper.
+function csvFields(line) {
+  const fields = [];
+  const token = /(?:"((?:[^"]|"")*)"|([^",]*))(,|$)/y;
+  while (true) {
+    const match = token.exec(line);
+    if (!match) return null;
+    fields.push((match[1] ?? match[2]).replaceAll('""', '"').trim());
+    if (!match[3]) return fields;
+  }
+}
+
+function importedPrices(text, shuffle) {
+  const lines = text.trim().replace(/^\uFEFF/, '').split(/\r\n|\n|\r/).map(line => line.trim().replace(/\\$/, '').trim()).filter(Boolean);
+  const header = csvFields(lines.shift() || '')?.map(value => value.toLowerCase()) || [];
+  const nameIndex = header.indexOf('name');
+  const priceIndex = header.indexOf('price');
+  if (nameIndex < 0 || priceIndex < 0) throw Error('Copy Export Results with the Price and Name column headings included.');
+
+  const prices = new Map();
+  let skipped = 0;
+  for (const line of lines) {
+    const fields = csvFields(line);
+    const name = fields?.[nameIndex]?.toLowerCase();
+    const price = Number(fields?.[priceIndex]);
+    if (!name || fields.length !== header.length || !/^\d+$/.test(fields[priceIndex]) || !Number.isSafeInteger(price) || price <= 0) {
+      skipped++;
+      continue;
+    }
+    // Equal names with different prices may refer to different item variants.
+    prices.set(name, prices.has(name) && prices.get(name) !== price ? null : price);
+  }
+  const candidates = [{name: shuffle.output, owner: shuffle, field: 'sale'}];
+  for (const {node} of nodes(shuffle.ingredients)) candidates.push({name: node.name, owner: node, field: 'price'});
+  const targets = candidates.filter(target => Number.isSafeInteger(prices.get(target.name.trim().toLowerCase())));
+  for (const target of targets) target.price = money(prices.get(target.name.trim().toLowerCase()));
+  const used = new Set(targets.map(target => target.name.trim().toLowerCase()));
+  const unused = [...prices.keys()].filter(name => !used.has(name)).map(name => prices.get(name) === null ? name + ' (conflicting prices)' : name);
+  return {targets, unused, skipped};
+}
+
+function previewPrices() {
+  const button = $('apply-prices');
+  const preview = $('price-preview');
+  const shuffle = active();
+  button.disabled = true;
+  const raw = $('price-csv').value.trim();
+  if (!raw) {
+    preview.textContent = '';
+    return [];
+  }
+  try {
+    const {targets, unused, skipped} = importedPrices(raw, shuffle);
+    const entries = targets.map(target => `<tr><th scope="row">${escapeHtml(target.name)}<small> ${target.field === 'sale' ? '(sale)' : '(buy)'}</small></th>
+      <td>${escapeHtml(target.owner[target.field]) || '—'}</td><td>${target.price}</td></tr>`).join('');
+    preview.innerHTML = `<p><b>${escapeHtml(shuffle.name || 'Current shuffle')}</b></p>
+      ${entries ? `<table><thead><tr><th>Item</th><th>Current</th><th>Imported</th></tr></thead><tbody>${entries}</tbody></table>` : '<p>No matching prices. Check the item names in this shuffle.</p>'}
+      ${unused.length ? `<p class="hint">Skipped items: ${escapeHtml(unused.join(', '))}.</p>` : ''}
+      ${skipped ? `<p class="hint">Invalid rows skipped: ${skipped}.</p>` : ''}`;
+    button.disabled = targets.length === 0;
+    return targets;
+  } catch (error) {
+    preview.textContent = error.message;
+    return [];
+  }
+}
+
+$('import-prices').onclick = () => {
+  $('import-status').hidden = true;
+  $('price-csv').value = '';
+  previewPrices();
+  $('price-dialog').showModal();
+  $('price-csv').focus();
+};
+$('price-csv').oninput = previewPrices;
+$('apply-prices').onclick = () => {
+  const targets = previewPrices();
+  if (!targets.length) return;
+  for (const target of targets) target.owner[target.field] = target.price;
+  save();
+  render();
+  $('price-dialog').close();
+  $('import-status').textContent = `Applied ${targets.length} ${targets.length === 1 ? 'price' : 'prices'} to ${active().name || 'this shuffle'}.`;
+  $('import-status').hidden = false;
+};
