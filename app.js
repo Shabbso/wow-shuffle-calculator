@@ -75,10 +75,29 @@ function renderRecipe() {
   $('parent-name').textContent = s.output || 'Finished item';
   $('yield-line').innerHTML = field('Items made by one craft', s.yield, 'yield');
   $('ingredients').innerHTML = s.ingredients.map(node => ingredient(node)).join('') || '<p class="hint">Add the first reagent used to make this item.</p>';
-  updateCosts();
 }
 
-function updateBranchCosts(items, runs) {
+function sourceVerdict(node, difference) {
+  let action = 'Need inputs';
+  let tone = 'neutral';
+  let reason = 'Complete both pricing paths to compare.';
+  if (difference === 0) {
+    action = 'Either';
+    reason = 'Buying and crafting cost the same.';
+  } else if (difference !== null) {
+    const craft = difference > 0;
+    action = craft ? 'Craft' : 'Buy';
+    tone = craft ? 'craft' : 'buy';
+    reason = `${craft ? 'Crafting' : 'Buying'} saves ${money(Math.abs(difference))} this batch.`;
+    if (node.mode !== 'auto' && node.mode !== tone) {
+      reason += ` Your selected source is ${node.mode === 'buy' ? 'Buy' : 'Craft'}.`;
+    }
+  }
+  return `<div class="source-verdict ${tone}"><div class="source-title"><strong>${action}</strong>
+    <b>${escapeHtml(node.name || 'Unnamed reagent')}</b></div><p>${reason}</p></div>`;
+}
+
+function updateBranchCosts(items, runs, verdicts) {
   for (const node of items) {
     if (!node.children.length) continue;
     const name = node.name.trim() || 'reagent';
@@ -88,24 +107,24 @@ function updateBranchCosts(items, runs) {
     const buy = plan([node], runs, {id: node.id, mode: 'buy'});
     const craft = plan([node], runs, {id: node.id, mode: 'craft'});
     const difference = buy && craft ? buy.cost - craft.cost : null;
-    let verdict = 'Enter the missing prices to compare.';
-    if (difference === 0) verdict = 'Both sources cost the same.';
-    else if (difference !== null) verdict = `${difference > 0 ? 'Crafting' : 'Buying'} saves ${money(Math.abs(difference))}.`;
+    const verdict = sourceVerdict(node, difference);
+    verdicts.set(node.id, verdict);
     const output = Number(node.yield);
     const outputLabel = positive(output) ? output : '—';
     const buyQuote = positive(output) ? copper(node.price) * output : NaN;
     const craftQuote = positive(output) ? plan(node.children, 1) : null;
-    $('cost-' + node.id).innerHTML = `<div class="quotes"><div>Buy ${outputLabel} ready-made<strong>${Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
-      <div>Craft ${outputLabel} from materials<strong>${craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>
-      <p class="verdict">For ${positive(required) ? required : '—'} × ${escapeHtml(name)}: ${verdict}</p>`;
-    updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)));
+    $('cost-' + node.id).innerHTML = `${verdict}<div class="quotes"><div>Buy ${outputLabel} ready-made<strong>${Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
+      <div>Craft ${outputLabel} from materials<strong>${craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>`;
+    updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)), verdicts);
   }
 }
 
 function updateCosts() {
   const s = active();
-  updateBranchCosts(s.ingredients, Number(s.batch));
+  const verdicts = new Map();
+  updateBranchCosts(s.ingredients, Number(s.batch), verdicts);
   $('setup-summary').textContent = `${s.batch || '—'} crafts · ${s.sale || 'Set sale price'} each`;
+  return verdicts;
 }
 
 function *nodes(items, ancestors = []) {
@@ -135,6 +154,7 @@ function render() {
 }
 
 function results() {
+  const verdicts = updateCosts();
   const s = active();
   const r = summarize(s);
   const row = (label, value, tone = '') =>
@@ -144,8 +164,18 @@ function results() {
   const comparisons = choices.map(({node, ancestors}) => {
     const craft = summarize(s, {id: node.id, ancestors, mode: 'craft'});
     const buy = summarize(s, {id: node.id, ancestors, mode: 'buy'});
-    return `<tr><th scope="row">${escapeHtml(node.name || 'Unnamed ingredient')}</th>
-      <td>${craft ? money(craft.profit) : '—'}</td><td>${buy ? money(buy.profit) : '—'}</td></tr>`;
+    const outcome = scenario => {
+      if (!scenario) return 'Unavailable';
+      if (scenario.profit === 0) return 'Break-even';
+      return `${money(Math.abs(scenario.profit))} ${scenario.profit < 0 ? 'loss' : 'profit'}`;
+    };
+    const parent = ancestors.length ? choices.find(entry => entry.node.id === ancestors.at(-1)).node : null;
+    return `<div class="source-choice">
+      ${parent ? `<p class="hint">If crafting ${escapeHtml(parent.name || 'the parent reagent')}</p>` : ''}
+      ${verdicts.get(node.id)}
+      ${craft?.profit < 0 && buy?.profit < 0 ? '<p class="batch-warning">Both options lose money on the finished batch.</p>' : ''}
+      <div class="outcomes"><span>Batch if crafted <b>${outcome(craft)}</b></span><span>Batch if bought <b>${outcome(buy)}</b></span></div>
+    </div>`;
   }).join('');
   $('analysis').innerHTML = `<section><h2>Profit estimate</h2>${r ? `
     <div class="profit">${signed('Batch profit', r.profit)}</div>
@@ -156,8 +186,7 @@ function results() {
     ${row('Other batch costs', money(r.expenses))}
     <p class="target ${r.profit >= r.goal ? 'gain' : 'loss'}">${r.profit >= r.goal ? 'Meets profit target' : 'Below profit target'}</p>
     ` : '<p class="hint">Enter valid prices and quantities for a complete buy or craft path.</p>'}</section>
-    ${comparisons ? `<section><h2>Craft vs. buy</h2><p class="hint">Batch profit if you craft or buy each reagent. For a nested reagent, this assumes you craft its parent. A dash means a price or recipe is missing.</p>
-      <table><thead><tr><th>Ingredient</th><th>Craft</th><th>Buy</th></tr></thead><tbody>${comparisons}</tbody></table></section>` : ''}
+    ${comparisons ? `<section><h2>Craft vs. buy</h2>${comparisons}</section>` : ''}
     ${r ? `<section><h2>Maximum buy prices</h2><p class="hint">Ceiling per item for ${money(copper(s.target))} profit per sale. Each ceiling assumes the other prices and sources stay fixed.</p>
       <table><thead><tr><th>Item</th><th>Batch qty</th><th>Max each</th></tr></thead><tbody>
       ${ceilings(r).map(row => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.units}</td>
@@ -176,7 +205,6 @@ function edit(event) {
   save();
   if (!id && field === 'output') $('parent-name').textContent = node.output || 'Finished item';
   if (id && field === 'name') $('row-' + id).setAttribute('aria-label', node.name || 'New reagent');
-  updateCosts();
   if (!id && field === 'name') renderMenu();
   results();
 }
