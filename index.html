@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WoW Shuffle Calculator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="shell mast"><h1>WoW Shuffle Calculator</h1><span>Recipes save in this browser</span></div></header>
+<main class="shell">
+<nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete</button><button id="view" class="primary">Show results</button></nav>
+<p id="storage" role="status" hidden></p>
+<div class="layout"><div class="editor">
+<details id="setup"><summary>Sale &amp; batch settings <small id="setup-summary"></small></summary>
+<div id="settings"></div><p class="hint">Prices accept 1g50s, 30s39c, or 7.05 for 7s 5c. Use 0c for free items.</p></details>
+<details id="recipe" open><summary>Recipe editor</summary><div id="recipe-body">
+<nav id="path" aria-label="Recipe path"></nav>
+<h2 id="parent-name" tabindex="-1"></h2>
+<div id="yield-line"></div><div id="parent-source" hidden></div>
+<div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button> <button id="back" hidden>Done editing recipe</button></div>
+</div></details></div>
+<aside id="analysis" aria-label="Shuffle results"></aside></div></main>
+<script src="calc.js"></script><script src="app.js"></script></body></html>

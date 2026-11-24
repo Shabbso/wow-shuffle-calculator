@@ -1,0 +1,76 @@
+:root{color-scheme:light;--ink:#192f2a;--muted:#52665c;--line:#ccd6ce;--forest:#174a3e;--paper:#fffefa;--gold:#f0d397;font:15px/1.5 'Avenir Next',system-ui,sans-serif;color:var(--ink);background:#f2f2ea}
+*{box-sizing:border-box}
+body{margin:0}
+.shell{max-width:1340px;width:calc(100% - 60px);margin:auto}
+.mast,.library,.actions,.source,.profit .metric,.metric{display:flex;align-items:center;gap:10px}
+header{background:#173e33;color:white;border-bottom:4px solid var(--gold)}
+.mast{justify-content:space-between;padding:17px 0}
+h1,h2,h3,p{margin:0}
+h1,#parent-name{font-family:'Iowan Old Style',Georgia,serif;letter-spacing:-.035em}
+h1{font-weight:550;font-size:clamp(1.55rem,3vw,2.05rem)}
+.mast span{font-size:.82rem;color:#deece1}
+.library{flex-wrap:wrap;padding:17px 0;margin-bottom:8px;align-items:end}
+.library label{width:min(280px,100%)}
+label{display:grid;gap:4px;color:var(--muted);font-size:.81rem;font-weight:650;min-width:0}
+input,select,button{min-width:0;border:1px solid #a5b5aa;border-radius:6px;font:inherit;color:var(--ink);background:#fff;min-height:38px;padding:6px 10px}
+input,select{width:100%;font-size:.95rem;font-weight:500}
+button{cursor:pointer;font-size:.85rem;font-weight:650}
+button:hover{background:#eaf1eb;border-color:#69917e}
+button.primary,#add{background:var(--forest);color:white;border-color:var(--forest)}
+#view{margin-left:auto}
+:focus-visible{outline:3px solid #23795f;outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;padding-bottom:30px}
+section,details{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
+section{padding:18px}
+summary{padding:14px 18px;font-weight:700;cursor:pointer}
+summary::marker{color:var(--forest)}
+summary small{font-size:.8rem;color:var(--muted);font-weight:500;margin-left:8px}
+details[open]>summary{border-bottom:1px solid var(--line)}
+#settings,#setup>.hint,#recipe-body{padding:14px 18px}
+.fields{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+.fields+.fields{margin-top:10px}
+#setup>.hint{padding-top:0}
+#path{color:var(--muted);font-size:.82rem;overflow-wrap:anywhere}
+#path button{border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--forest);background:transparent;padding:0 2px;min-height:30px}
+#parent-name{font-size:clamp(1.65rem,3vw,2.55rem);margin:2px 0 8px;line-height:1.18;overflow-wrap:anywhere}
+#yield-line label{display:flex;align-items:center;gap:10px}
+#yield-line input{width:64px}
+.materials{margin-top:16px}
+h3{font-size:.9rem;margin-bottom:8px}
+.ingredient{padding:13px;background:#f6f8f3;border:1px solid #d4dfd4;border-radius:8px;margin-bottom:10px}
+.ingredient-fields{display:grid;grid-template-columns:minmax(0,2fr) minmax(68px,.65fr) minmax(90px,1fr);gap:10px}
+.actions{margin-top:10px;flex-wrap:wrap}
+.actions button{min-height:34px}
+.source{flex-direction:row;gap:6px}
+.source select{font-size:.82rem;min-height:34px;width:auto}
+.remove{margin-left:auto;color:var(--muted);background:transparent;border-color:transparent}
+.decision{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:.83rem;color:#375947}
+.hint{font-size:.84rem;color:var(--muted)}
+h2{font-size:1.15rem;margin-bottom:8px}
+#analysis section:first-child{background:#163d32;color:white;border:0}
+#analysis section:first-child .hint{color:#d5e7d9;margin:0 0 12px}
+.profit .metric{display:grid;gap:0}
+.profit strong{color:var(--gold);font:600 2.5rem/1.1 'Iowan Old Style',Georgia,serif}
+.metric{justify-content:space-between;padding:4px 0;font-variant-numeric:tabular-nums}
+.metric strong{text-align:right}
+.profit strong{text-align:left}
+.target{border-top:1px solid #55756a;padding-top:9px;margin-top:9px;font-weight:650}
+.gain{color:#b3f2c9}.loss,.profit .loss{color:#ffb7aa}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:.87rem}
+th,td{text-align:right;padding:6px 3px;border-bottom:1px solid var(--line);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+th:first-child{text-align:left}
+thead{color:var(--muted)}
+.results-view{display:block}
+.results-view .editor,.results-view #analysis{display:grid;gap:14px;align-items:start}
+.results-view .editor{grid-template-columns:1fr 1fr}
+.results-view #analysis{grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+@media(max-width:800px){.shell{width:calc(100% - 24px)}.layout{display:block}.mast span{display:none}.library{gap:6px}.library label{width:100%}.results-view .editor{grid-template-columns:1fr}.results-view .editor details{margin:0}.results-view #analysis{margin-top:12px}.fields{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:510px){.ingredient-fields{grid-template-columns:1fr 1fr}.ingredient-fields label:first-child{grid-column:span 2}.actions{gap:5px}.source{width:100%}#recipe-body,#settings,section{padding:12px}summary small{display:block;margin-left:18px}.results-view #analysis{grid-template-columns:1fr}}
+
+#parent-source{margin-top:12px;border-left:3px solid #649885;background:#edf3ed;padding:12px}
+
+.demand{margin-top:10px;color:var(--muted);font-size:.85rem}
+.quotes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0}
+.quotes>div{background:#fffefa;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:.82rem;color:var(--muted)}
+.quotes strong{display:block;color:var(--ink);font-size:1.12rem;font-variant-numeric:tabular-nums}
+.verdict{font-weight:650;color:var(--forest);font-size:.9rem}
