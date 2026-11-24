@@ -9,7 +9,14 @@
 <body>
 <header><div class="shell mast"><h1>WoW Shuffle Calculator</h1><span>Recipes save in this browser</span></div></header>
 <main class="shell">
-<nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
+<nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete</button><button id="market-open">Market snapshot</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
+<dialog id="market-dialog" aria-labelledby="market-title">
+<div class="market-head"><div><small>US · Normal · Horde</small><h2 id="market-title">Market snapshot</h2></div><button id="market-close">Close</button></div>
+<p class="hint">Hourly asking prices from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH and Blizzard’s Battle.net API</a>. Sales per day are estimates and may include cancellations.</p>
+<p id="market-status" role="status"></p>
+<div id="market-items"></div><p id="market-profit"></p>
+<div class="import-actions"><button id="market-refresh">Refresh</button><button id="market-apply" class="primary" disabled>Apply selected prices</button></div>
+</dialog>
 <dialog id="price-dialog" aria-labelledby="import-title">
 <form method="dialog"><h2 id="import-title">Import Auctionator prices</h2>
 <p class="hint">In Auctionator’s Shopping tab, run your list and copy <b>Export Results</b> from below the results table.</p>
@@ -30,4 +37,4 @@
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
 <aside id="analysis" aria-label="Shuffle results"></aside></div></main>
-<script src="calc.js"></script><script src="app.js"></script></body></html>
+<script src="calc.js"></script><script src="app.js"></script><script src="market.js"></script></body></html>

@@ -99,3 +99,19 @@ thead{color:var(--muted)}
 .import-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 #apply-prices:disabled { opacity:.5; cursor:default; }
 #import-status { color:var(--forest); margin-bottom:12px; }
+#market-dialog {width:min(620px,calc(100% - 24px));max-height:88vh;overflow:auto;padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}
+#market-dialog::backdrop {background:#132e27aa}
+.market-head,.market-check {display:flex;align-items:center;gap:8px}
+.market-head {justify-content:space-between}
+.market-row {padding:12px 0;border-bottom:1px solid var(--line)}
+.market-check {font-size:1rem;color:var(--ink)}
+.market-check input {width:19px;height:19px;min-height:0;accent-color:var(--forest)}
+.market-check small,.market-row dt {font-weight:500;color:var(--muted)}
+.market-row dl {display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin:9px 0}
+.market-row dt {font-size:.78rem}
+.market-row dd {margin:0;font-weight:650}
+.market-row details {margin:4px 0 0}
+.market-row summary {padding:6px 10px;font-size:.85rem}
+.history-content {padding:0 8px;font-size:.85rem}
+#market-status,#market-profit {margin:10px 0;font-size:.92rem;font-weight:600}
+#market-dialog button:disabled {opacity:.5;cursor:default}
