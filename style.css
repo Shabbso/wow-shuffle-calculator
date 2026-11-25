@@ -1,29 +1,31 @@
-:root{color-scheme:light;--ink:#192f2a;--muted:#52665c;--line:#ccd6ce;--forest:#174a3e;--paper:#fffefa;--gold:#f0d397;font:15px/1.5 'Avenir Next',system-ui,sans-serif;color:var(--ink);background:#f2f2ea}
+@font-face {
+  font-family: "Great Vibes";
+  src: url("assets/shabs-script.ttf") format("truetype");
+  font-display: swap;
+}
+:root{color-scheme:light;--ink:#192c45;--muted:#4d6076;--line:#c7cfda;--blue:#244f84;--paper:#fffdf7;--gold:#ffda91;font:15px/1.5 'Avenir Next',system-ui,sans-serif;color:var(--ink);background:#e9edf3}
 *{box-sizing:border-box}
 body{margin:0}
 .shell{max-width:1340px;width:calc(100% - 60px);margin:auto}
 .mast,.library,.actions,.source,.profit .metric,.metric{display:flex;align-items:center;gap:10px}
-header{background:#173e33;color:white;border-bottom:4px solid var(--gold)}
-.mast{justify-content:space-between;padding:17px 0}
 h1,h2,h3,p{margin:0}
 h1,#parent-name{font-family:'Iowan Old Style',Georgia,serif;letter-spacing:-.035em}
 h1{font-weight:550;font-size:clamp(1.55rem,3vw,2.05rem)}
-.mast span{font-size:.82rem;color:#deece1}
 .library{flex-wrap:wrap;padding:17px 0;margin-bottom:8px;align-items:end}
 .library label{width:min(280px,100%)}
 label{display:grid;gap:4px;color:var(--muted);font-size:.81rem;font-weight:650;min-width:0}
-input,select,button{min-width:0;border:1px solid #a5b5aa;border-radius:6px;font:inherit;color:var(--ink);background:#fff;min-height:38px;padding:6px 10px}
+input,select,button{min-width:0;border:1px solid #9cabbd;border-radius:6px;font:inherit;color:var(--ink);background:#fff;min-height:38px;padding:6px 10px}
 input,select{width:100%;font-size:.95rem;font-weight:500}
 button{cursor:pointer;font-size:.85rem;font-weight:650}
-button:hover{background:#eaf1eb;border-color:#69917e}
-button.primary,#add{background:var(--forest);color:white;border-color:var(--forest)}
+button:hover{background:#eaf2fc;border-color:#6685ad}
+button.primary,#add{background:var(--blue);color:white;border-color:var(--blue)}
 #view{margin-left:auto}
-:focus-visible{outline:3px solid #23795f;outline-offset:2px}
+:focus-visible{outline:3px solid #1b69ad;outline-offset:2px}
 .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;padding-bottom:30px}
 section,details{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
 section{padding:18px}
 summary{padding:14px 18px;font-weight:700;cursor:pointer}
-summary::marker{color:var(--forest)}
+summary::marker{color:var(--blue)}
 summary small{font-size:.8rem;color:var(--muted);font-weight:500;margin-left:8px}
 details[open]>summary{border-bottom:1px solid var(--line)}
 #settings,#setup>.hint,#recipe-body{padding:14px 18px}
@@ -37,7 +39,7 @@ details[open]>summary{border-bottom:1px solid var(--line)}
 #yield-line input{width:64px}
 .materials{margin-top:16px}
 h3{font-size:.9rem;margin-bottom:8px}
-.ingredient{padding:13px;background:#f6f8f3;border:1px solid #d4dfd4;border-radius:8px;margin-bottom:10px}
+.ingredient{padding:13px;background:#f2f5fa;border:1px solid #c6d2df;border-radius:8px;margin-bottom:10px}
 .ingredient-fields{display:grid;grid-template-columns:minmax(0,2fr) minmax(68px,.65fr) minmax(90px,1fr) auto;align-items:end;gap:10px}
 .actions{margin-top:10px;flex-wrap:wrap}
 .actions button{min-height:34px}
@@ -47,14 +49,14 @@ h3{font-size:.9rem;margin-bottom:8px}
 .remove:hover{color:#72251c;background:#fbe6e2;border-color:#ab655b}
 .hint{font-size:.84rem;color:var(--muted)}
 h2{font-size:1.15rem;margin-bottom:8px}
-#analysis section:first-child{background:#163d32;color:white;border:0}
-#analysis section:first-child .hint{color:#d5e7d9;margin:0 0 12px}
+#analysis section:first-child{background:#173653;color:white;border:0}
+#analysis section:first-child .hint{color:#d9e7f6;margin:0 0 12px}
 .profit .metric{display:grid;gap:0}
 .profit strong{color:var(--gold);font:600 2.5rem/1.1 'Iowan Old Style',Georgia,serif}
 .metric{justify-content:space-between;padding:4px 0;font-variant-numeric:tabular-nums}
 .metric strong{text-align:right}
 .profit strong{text-align:left}
-.target{border-top:1px solid #55756a;padding-top:9px;margin-top:9px;font-weight:650}
+.target{border-top:1px solid #516d88;padding-top:9px;margin-top:9px;font-weight:650}
 .gain{color:#b3f2c9}.loss,.profit .loss{color:#ffb7aa}
 table{border-collapse:collapse;width:100%;margin:10px 0;font-size:.87rem}
 th,td{text-align:right;padding:6px 3px;border-bottom:1px solid var(--line);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -64,15 +66,15 @@ thead{color:var(--muted)}
 .results-view .editor,.results-view #analysis{display:grid;gap:14px;align-items:start}
 .results-view .editor{grid-template-columns:1fr 1fr}
 .results-view #analysis{grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
-@media(max-width:800px){.shell{width:calc(100% - 24px)}.layout{display:block}.mast span{display:none}.library{gap:6px}.library label{width:100%}.results-view .editor{grid-template-columns:1fr}.results-view .editor details{margin:0}.results-view #analysis{margin-top:12px}.fields{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){.shell{width:calc(100% - 24px)}.layout{display:block}.library{gap:6px}.library label{width:100%}.results-view .editor{grid-template-columns:1fr}.results-view .editor details{margin:0}.results-view #analysis{margin-top:12px}.fields{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:510px){.ingredient-fields{grid-template-columns:1fr 1fr}.ingredient-fields label:first-child{grid-column:span 2}.actions{gap:5px}.source{width:100%}#recipe-body,#settings,section{padding:12px}summary small{display:block;margin-left:18px}.results-view #analysis{grid-template-columns:1fr}}
 
 
 .demand{margin-top:10px;color:var(--muted);font-size:.85rem}
 .quotes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0}
-.quotes>div{background:#fffefa;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:.82rem;color:var(--muted)}
+.quotes>div{background:#fffdf7;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:.82rem;color:var(--muted)}
 .quotes strong{display:block;color:var(--ink);font-size:1.12rem;font-variant-numeric:tabular-nums}
-.verdict{font-weight:650;color:var(--forest);font-size:.9rem}
+.verdict{font-weight:650;color:var(--blue);font-size:.9rem}
 .subrecipe { margin: 12px 0 0 12px; background: #eff4fa; border: 1px solid #c9d8e7; border-left: 4px solid #537599; border-radius: 7px; }
 .subrecipe > summary { padding: 9px 12px; color: #284965; font-size: .9rem; }
 .subrecipe > summary::marker { color: #426b8c; }
@@ -97,19 +99,19 @@ thead{color:var(--muted)}
   .subrecipe .subrecipe .branch-body, .subrecipe .subrecipe .ingredient { padding-inline: 2px; }
 }
 #price-dialog { width:min(570px,calc(100% - 24px)); max-height:85vh; overflow:auto; padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--paper); color:var(--ink); }
-#price-dialog::backdrop { background:#132e27aa; }
+#price-dialog::backdrop { background:#102339aa; }
 #price-dialog label { margin-top:14px; }
-#price-csv { width:100%; box-sizing:border-box; resize:vertical; margin:4px 0 10px; border:1px solid #a5b5aa; border-radius:6px; padding:8px; font: .85rem/1.5 ui-monospace,monospace; }
+#price-csv { width:100%; box-sizing:border-box; resize:vertical; margin:4px 0 10px; border:1px solid #9cabbd; border-radius:6px; padding:8px; font: .85rem/1.5 ui-monospace,monospace; }
 .import-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 #apply-prices:disabled { opacity:.5; cursor:default; }
-#import-status { color:var(--forest); margin-bottom:12px; }
+#import-status { color:var(--blue); margin-bottom:12px; }
 #market-dialog {width:min(620px,calc(100% - 24px));max-height:88vh;overflow:auto;padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}
-#market-dialog::backdrop {background:#132e27aa}
+#market-dialog::backdrop {background:#102339aa}
 .market-head,.market-check {display:flex;align-items:center;gap:8px}
 .market-head {justify-content:space-between}
 .market-row {padding:12px 0;border-bottom:1px solid var(--line)}
 .market-check {font-size:1rem;color:var(--ink)}
-.market-check input {width:19px;height:19px;min-height:0;accent-color:var(--forest)}
+.market-check input {width:19px;height:19px;min-height:0;accent-color:var(--blue)}
 .market-check small,.market-row dt {font-weight:500;color:var(--muted)}
 .market-row dl {display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin:9px 0}
 .market-row dt {font-size:.78rem}
@@ -120,9 +122,9 @@ thead{color:var(--muted)}
 #market-status,#market-profit {margin:10px 0;font-size:.92rem;font-weight:600}
 #market-dialog button:disabled {opacity:.5;cursor:default}
 .source-choice + .source-choice { margin-top: 16px; }
-.source-verdict { --tone: #52605b; --wash: #f0f1ed; background: var(--wash); border-left: 4px solid var(--tone); border-radius: 6px; padding: 10px 12px; color: var(--tone); }
+.source-verdict { --tone: #47576a; --wash: #eff1f4; background: var(--wash); border-left: 4px solid var(--tone); border-radius: 6px; padding: 10px 12px; color: var(--tone); }
 .source-verdict.buy { --tone: #1b4976; --wash: #eaf3ff; }
-.source-verdict.craft { --tone: #195842; --wash: #e6f4ea; }
+.source-verdict.craft { --tone: #714919; --wash: #fbf1da; }
 .source-title { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; }
 .source-title strong { font-size: 1rem; text-transform: uppercase; letter-spacing: .05em; background: var(--tone); color: white; padding: 3px 9px; border-radius: 4px; }
 .source-title b { color: var(--ink); font-size: 1.08rem; overflow-wrap: anywhere; }
@@ -142,16 +144,16 @@ thead{color:var(--muted)}
 .shopping-list li span {display:block;color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
 
 .work-tools {display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 16px;padding:9px 0;border-block:1px solid var(--line)}
-.work-tools button,.text-button {background:transparent;border-color:transparent;color:var(--forest)}
-.work-tools button:hover,.text-button:hover {background:#e2e9e0}
-#analysis .sale-context {background:transparent;color:inherit;border-color:#55756a;margin:12px 0 0;padding:0 10px}
-#analysis .sale-context summary {padding:8px 0;color:#dfede1;font-size:.88rem}
-#analysis .sale-context summary::marker {color:#b3dcc2}
-#analysis .sale-context[open]>summary {border-color:#55756a}
+.work-tools button,.text-button {background:transparent;border-color:transparent;color:var(--blue)}
+.work-tools button:hover,.text-button:hover {background:#dae5f1}
+#analysis .sale-context {background:transparent;color:inherit;border-color:#516d88;margin:12px 0 0;padding:0 10px}
+#analysis .sale-context summary {padding:8px 0;color:#e4effb;font-size:.88rem}
+#analysis .sale-context summary::marker {color:#c2d9f2}
+#analysis .sale-context[open]>summary {border-color:#516d88}
 #analysis .sale-context .hint {margin:4px 0 8px}
 #analysis .sale-context .metric {font-size:.88rem}
 #work-dialog {width:min(820px,calc(100% - 24px));max-height:88vh;overflow:auto;padding:0 18px 18px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}
-#work-dialog::backdrop {background:#132e27aa}
+#work-dialog::backdrop {background:#102339aa}
 #work-dialog .market-head {position:sticky;top:0;z-index:1;background:var(--paper);padding:12px 0;border-bottom:1px solid var(--line)}
 #work-dialog .market-head h2 {margin:0}
 #work-body>*,#plan-results>* {margin-top:12px}
@@ -159,7 +161,7 @@ thead{color:var(--muted)}
 .tool-fields button,.tier-line button {justify-self:start}
 #tier-editor[open] {padding:0 12px 12px}
 #tier-source {margin-top:8px}
-#plan-message {color:var(--forest);font-weight:600}
+#plan-message {color:var(--blue);font-weight:600}
 #plan-shopping .shopping-list {display:block}
 #work-body .scroll-table {overflow:auto}
 .scroll-table table {min-width:640px}
@@ -172,3 +174,55 @@ thead{color:var(--muted)}
 
 .shopping-head {display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .shopping-head h2 {margin:0}
+
+/* The metal surround uses a nine-slice so the corner carvings keep their proportions. */
+.guild-banner {
+  position:relative; isolation:isolate; color:#fff5db; background:#11253d;
+  border-block:2px solid #967744; box-shadow:0 3px 12px #172c492e;
+}
+.guild-banner::before {
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  border:solid transparent; border-width:13px 40px;
+  border-image:url("assets/frostbound.webp") 16 58 fill / 13px 40px / 0 stretch;
+  opacity:.76;
+}
+.mast {justify-content:space-between;gap:18px;padding:28px 30px 21px}
+.brand h1 {display:flex;align-items:baseline;flex-wrap:wrap;gap:0 .38em;font:600 clamp(1.9rem,3.4vw,3.15rem)/1.1 Georgia,serif;letter-spacing:-.045em}
+.signature {font:400 1.54em/1 "Great Vibes","Snell Roundhand",cursive;color:var(--gold);letter-spacing:normal}
+.brand-subtitle {display:flex;align-items:center;gap:10px;margin:3px 0 0;color:#d0dfed;font-size:.78rem;font-weight:650;letter-spacing:.13em;text-transform:uppercase}
+.brand-subtitle::before {content:"";width:28px;border-top:1px solid #c4a56c}
+.guild-credit {display:flex;align-items:center;gap:4px;padding-left:18px;border-left:1px solid #93a5b555}
+.guild-credit img {width:74px;height:74px;object-fit:contain}
+.guild-credit p {color:#d6e2ef;font-size:.8rem}
+.guild-credit strong {display:block;color:#ffdc98;font:600 1.3rem/1.35 Georgia,serif;white-space:nowrap}
+.storage-note {font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding:12px 0 20px}
+body {background:linear-gradient(150deg,#e1e7ee 0,#f1f3f6 600px,#e9edf3);min-height:100vh}
+button.primary,#add {background:linear-gradient(#325f95,#224975);border-color:#183855;box-shadow:inset 0 1px #8eadd0}
+button.primary:hover,#add:hover {background:#193d69}
+.editor>details,#analysis>section {box-shadow:0 2px 5px #142d4910;border-radius:8px}
+.editor>details>summary {background:linear-gradient(100deg,#e5ecf3,#f1f4f7);color:#243e5d;border-radius:7px;font:600 1.1rem/1.45 Georgia,serif}
+.editor>details[open]>summary {border-radius:7px 7px 0 0}
+.editor>details>summary small {font-family:"Avenir Next",system-ui,sans-serif}
+#analysis>section>h2,.shopping-head h2,.market-head h2,#import-title {font:600 1.45rem/1.25 Georgia,serif;letter-spacing:-.025em}
+#analysis>section:first-child {background:linear-gradient(125deg,#213f61,#122a44 72%);border:1px solid #203954;border-top:3px solid #bd965a;box-shadow:inset 0 0 0 3px #ffffff09,0 2px 5px #142d4926}
+#analysis>section:first-child>h2 {color:#f4e3c4}
+.profit strong.gain {color:var(--gold)}
+.work-tools {border-color:#afbdce}
+@media(max-width:720px) {
+  .mast {align-items:flex-start;flex-direction:column;gap:9px;padding:23px 16px 19px}
+  .brand h1 {font-size:clamp(1.42rem,5vw,2.3rem)}
+  .brand-subtitle {font-size:.69rem;letter-spacing:.085em}
+  .brand-subtitle::before {width:16px}
+  .guild-credit {border:0;padding:0;gap:5px}
+  .guild-credit img {width:30px;height:30px}
+  .guild-credit p {font-size:.75rem}
+  .guild-credit strong {display:inline;font-size:1rem}
+  .guild-banner::before {border-image-width:9px 17px}
+}
+
+@media(max-width:600px) {
+  .library {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+  .library label {grid-column:1/-1}
+  .library button {padding-inline:5px}
+  #view {margin-left:0}
+}

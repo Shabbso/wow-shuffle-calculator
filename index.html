@@ -3,11 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WoW Shuffle Calculator</title>
-<link rel="stylesheet" href="style.css?v=finished-item">
+<title>Shab's Shuffle Calculator</title>
+<link rel="icon" type="image/png" href="assets/biscuit-front.png">
+<link rel="preload" href="assets/shabs-script.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css?v=guild-banner">
 </head>
 <body>
-<header><div class="shell mast"><h1>WoW Shuffle Calculator</h1><span>Recipes save in this browser</span></div></header>
+<header class="guild-banner">
+  <div class="shell mast">
+    <div class="brand">
+      <h1><span class="signature">Shab's</span> <span class="brand-name">Shuffle Calculator</span></h1>
+      <p class="brand-subtitle">WoW: Forever Auction House Tool</p>
+    </div>
+    <div class="guild-credit">
+      <img src="assets/biscuit-front.png" width="80" height="80" alt="">
+      <p>Brought to you by <strong>&lt;Biscuit Front&gt;</strong></p>
+    </div>
+  </div>
+</header>
 <main class="shell">
 <nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete shuffle</button><button id="market-open">Market snapshot</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
 <dialog id="market-dialog" aria-labelledby="market-title">
@@ -42,5 +55,5 @@
 <div id="yield-line"></div>
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
-<aside id="analysis" aria-label="Shuffle results"></aside></div></main>
+<aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser</footer></main>
 <script src="calc.js"></script><script src="app.js?v=finished-item"></script><script src="market.js"></script><script src="workshop.js"></script></body></html>
