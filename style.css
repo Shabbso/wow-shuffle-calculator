@@ -31,6 +31,8 @@ details[open]>summary{border-bottom:1px solid var(--line)}
 .fields+.fields{margin-top:10px}
 #setup>.hint{padding-top:0}
 #parent-name{font-size:clamp(1.65rem,3vw,2.55rem);margin:2px 0 8px;line-height:1.18;overflow-wrap:anywhere}
+.finished-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+#delete-current{color:#882f24;border-color:#c49890}
 #yield-line label{display:flex;align-items:center;gap:10px}
 #yield-line input{width:64px}
 .materials{margin-top:16px}

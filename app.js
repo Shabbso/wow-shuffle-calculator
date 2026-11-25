@@ -75,9 +75,14 @@ function ingredient(node, depth = 0) {
   </article>`;
 }
 
+function showFinishedItem(output) {
+  $('parent-name').textContent = output.trim() || 'No finished item';
+  $('finished-action').textContent = output.trim() ? 'Remove finished item' : 'Set finished item';
+}
+
 function renderRecipe() {
   const s = active();
-  $('parent-name').textContent = s.output || 'Finished item';
+  showFinishedItem(s.output);
   $('yield-line').innerHTML = field('Items made by one craft', s.yield, 'yield');
   $('ingredients').innerHTML = s.ingredients.map(node => ingredient(node)).join('') || '<p class="hint">Add the first reagent used to make this item.</p>';
 }
@@ -262,7 +267,7 @@ function edit(event) {
   if (!node) return;
   node[field] = event.target.value;
   save();
-  if (!id && field === 'output') $('parent-name').textContent = node.output || 'Finished item';
+  if (!id && field === 'output') showFinishedItem(node.output);
   if (id && field === 'name') $('row-' + id).setAttribute('aria-label', node.name || 'New reagent');
   if (!id && field === 'name') renderMenu();
   results();
@@ -314,14 +319,33 @@ $('duplicate').onclick = () => {
   copy.name += ' (copy)';
   append(copy);
 };
-$('delete').onclick = () => {
-  if (!confirm(`Delete “${active().name || 'Untitled shuffle'}”?`)) return;
+$('finished-action').onclick = () => {
+  const s = active();
+  if (!s.output.trim()) {
+    $('setup').open = true;
+    $('settings').querySelector('[data-field="output"]').focus();
+    return;
+  }
+  if (!confirm(`Remove “${s.output}” as the finished item and clear its sale price? Your shuffle and reagents will be kept.`)) return;
+  s.output = '';
+  s.sale = '';
+  save();
+  render();
+  $('finished-action').focus();
+};
+
+function deleteShuffle() {
+  if (!confirm(`Delete the saved shuffle “${active().name || 'Untitled shuffle'}” and its recipe?`)) return;
   state.shuffles = state.shuffles.filter(shuffle => shuffle.id !== active().id);
   if (!state.shuffles.length) state.shuffles.push(newShuffle());
   state.active = state.shuffles[0].id;
   save();
   render();
-};
+  $('saved').focus();
+}
+$('delete').onclick = deleteShuffle;
+$('delete-current').onclick = deleteShuffle;
+
 function add(list) {
   const node = item();
   list.push(node);
