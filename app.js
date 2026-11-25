@@ -102,7 +102,7 @@ function sourceVerdict(node, difference) {
     <b>${escapeHtml(node.name || 'Unnamed reagent')}</b></div><p>${reason}</p></div>`;
 }
 
-function updateBranchCosts(items, runs, verdicts) {
+function updateBranchCosts(items, runs, verdicts, ancestors = []) {
   for (const node of items) {
     const required = runs * Number(node.qty);
     $('total-action-' + node.id).dataset.required = positive(required) ? required : '';
@@ -113,6 +113,13 @@ function updateBranchCosts(items, runs, verdicts) {
         note.textContent = Number.isSafeInteger(cost) ? `Buying ${required} here costs ${money(cost)} in total.` : 'Enter the AH total in gold, silver or copper.';
       } else {
         note.textContent = `This recipe needs ${positive(required) ? required : '—'} for the batch. The unit price applies until the purchase quantity matches.`;
+      }
+    }
+    if (usesPurchaseTotal(node, required)) {
+      const budget = summarize(active(), {id:node.id, mode:'buy', ancestors});
+      if (budget) {
+        const room = budget.profit - budget.goal;
+        $('total-note-' + node.id).textContent += ` ${room >= 0 ? 'Within budget' : 'Over budget'} by ${money(Math.abs(room))} against your profit target.`;
       }
     }
     if (!node.children.length) continue;
@@ -131,7 +138,7 @@ function updateBranchCosts(items, runs, verdicts) {
     const craftQuote = hasTotal ? craft : plan(node.children, 1);
     $('cost-' + node.id).innerHTML = `${verdict}<div class="quotes"><div>Buy ${label} ready-made<strong>${positive(quantity) && Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
       <div>Craft ${label} from materials<strong>${positive(quantity) && craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>`;
-    updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)), verdicts);
+    updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)), verdicts, [...ancestors, node.id]);
   }
 }
 
@@ -169,6 +176,36 @@ function render() {
   results();
 }
 
+function shoppingList(s, estimate, planner = false) {
+  const batchReady = positive(s.batch) && positive(s.yield) && s.ingredients.length;
+  const route = batchReady && (estimate || plan(s.ingredients, Number(s.batch), {}, true));
+  if (!route) return `<section class="shopping-list"><h2>Shopping list</h2>
+    <p class="hint">Enter the batch and recipe quantities. For craftable reagents, add prices or choose Buy or Craft to set their source.</p></section>`;
+  const purchases = groupPurchases(route.purchases);
+  return `<section class="shopping-list"><h2>Shopping list</h2>
+    <p class="hint">${Number(s.batch)} ${Number(s.batch) === 1 ? 'craft' : 'crafts'} for ${Number(s.batch) * Number(s.yield)} × ${escapeHtml(s.output || 'finished item')}, ${planner ? 'using the planner’s sourcing choices' : 'using your selected sources'}.</p>
+    <table><thead><tr><th>Buy</th><th>Quantity</th></tr></thead><tbody>${purchases.map(item =>
+      `<tr><th scope="row">${escapeHtml(item.name)}</th><td><strong>${item.units.toLocaleString()}</strong></td></tr>`).join('')}</tbody></table>
+    ${route.crafts.length ? `<h3>Craft after shopping</h3><ol>${route.crafts.map(step =>
+      `<li><strong>${step.produced} × ${escapeHtml(step.name)}</strong>
+        <span>${step.produced !== step.runs ? `${step.runs} ${step.runs === 1 ? 'craft' : 'crafts'} · ` : ''}Use ${step.materials.map(m => `${m.units} × ${escapeHtml(m.name)}`).join(' + ')}${step.produced > step.needed ? ` · ${step.produced - step.needed} left over` : ''}</span></li>`).join('')}</ol>` : ''}
+  </section>`;
+}
+
+function outputMarket(s) {
+  return s.marketItems?.['item:' + s.output.trim().toLowerCase()];
+}
+
+function saleContext(s) {
+  const market = outputMarket(s);
+  if (!market) return '<p class="hint">Open Market snapshot for the latest listing and historical reference.</p>';
+  const typical = Number.isSafeInteger(market.reference) ? summarize({...s, sale:money(market.reference)}) : null;
+  return `<div class="metric"><span>Lowest listing</span><strong>${money(market.low)}</strong></div>
+    <div class="metric"><span>Historical reference</span><strong>${money(market.reference)}</strong></div>
+    ${typical ? `<p class="hint">Estimated profit at that price is ${money(Math.floor(typical.profit / typical.units))} per sale after costs.</p>` : ''}
+    <p class="hint">Forever AH · US Normal Horde · ${new Date(market.at).toLocaleString()}</p>`;
+}
+
 function results() {
   const verdicts = updateCosts();
   const s = active();
@@ -200,13 +237,18 @@ function results() {
     ${row('Sale proceeds after AH cut', money(r.proceeds))}
     ${row('Batch material cost', money(r.cost))}
     ${row('Other batch costs', money(r.expenses))}
+    <details class="sale-context"><summary>Sale price check</summary>
+      ${row('Break-even per sale', money(breakEven(r, Number(s.fee))))}
+      ${row('Entered sale price', money(copper(s.sale)))}
+      ${saleContext(s)}</details>
     <p class="target ${r.profit >= r.goal ? 'gain' : 'loss'}">${r.profit >= r.goal ? 'Meets profit target' : 'Below profit target'}</p>
     ` : '<p class="hint">Enter valid prices and quantities for a complete buy or craft path.</p>'}</section>
+    ${shoppingList(s, r)}
     ${comparisons ? `<section><h2>Craft vs. buy</h2>${comparisons}</section>` : ''}
     ${r ? `<section><h2>Maximum buy prices</h2><p class="hint">Ceiling per item for ${money(copper(s.target))} profit per sale. Each ceiling assumes the other prices and sources stay fixed.</p>
-      <table><thead><tr><th>Item</th><th>Batch qty</th><th>Max each</th></tr></thead><tbody>
+      <table><thead><tr><th>Item</th><th>Batch qty</th><th>Max each</th><th>Max total</th></tr></thead><tbody>
       ${ceilings(r).map(row => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.units}</td>
-      <td>${row.ceiling < 0 ? 'No viable price' : money(row.ceiling)}</td></tr>`).join('')}</tbody></table>
+      <td>${row.ceiling < 0 ? 'No viable price' : money(row.ceiling)}</td><td>${row.maxTotal < 0 ? '—' : money(row.maxTotal)}</td></tr>`).join('')}</tbody></table>
       <p class="hint">Batch costs include whole reagent crafts. Leftovers have zero resale value.</p>
     </section>` : ''}`;
 }

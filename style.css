@@ -130,3 +130,38 @@ thead{color:var(--muted)}
 .bulk-price { margin:10px 0; padding:10px 12px; border-left:3px solid #b28942; background:#fbf5e7; }
 .bulk-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr)); gap:8px; }
 .bulk-price .hint { margin-top:6px; }
+.shopping-list {display:none}
+.results-view .shopping-list {display:block}
+.shopping-list h3 {margin:12px 0 4px}
+.shopping-list ol {padding-left:1.4em;margin:0}
+.shopping-list li {margin:5px 0}
+.shopping-list li span {display:block;color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
+
+.work-tools {display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 16px;padding:9px 0;border-block:1px solid var(--line)}
+.work-tools button,.text-button {background:transparent;border-color:transparent;color:var(--forest)}
+.work-tools button:hover,.text-button:hover {background:#e2e9e0}
+#analysis .sale-context {background:transparent;color:inherit;border-color:#55756a;margin:12px 0 0;padding:0 10px}
+#analysis .sale-context summary {padding:8px 0;color:#dfede1;font-size:.88rem}
+#analysis .sale-context summary::marker {color:#b3dcc2}
+#analysis .sale-context[open]>summary {border-color:#55756a}
+#analysis .sale-context .hint {margin:4px 0 8px}
+#analysis .sale-context .metric {font-size:.88rem}
+#work-dialog {width:min(820px,calc(100% - 24px));max-height:88vh;overflow:auto;padding:0 18px 18px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}
+#work-dialog::backdrop {background:#132e27aa}
+#work-dialog .market-head {position:sticky;top:0;z-index:1;background:var(--paper);padding:12px 0;border-bottom:1px solid var(--line)}
+#work-dialog .market-head h2 {margin:0}
+#work-body>*,#plan-results>* {margin-top:12px}
+.tool-fields,.tier-line {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));align-items:end;gap:8px;margin:10px 0}
+.tool-fields button,.tier-line button {justify-self:start}
+#tier-editor[open] {padding:0 12px 12px}
+#tier-source {margin-top:8px}
+#plan-message {color:var(--forest);font-weight:600}
+#plan-shopping .shopping-list {display:block}
+#work-body .scroll-table {overflow:auto}
+.scroll-table table {min-width:640px}
+.text-button {text-align:left;text-decoration:underline}
+.ledger-form {padding:12px}
+.ledger-form>*,.ledger-form form>*,.ledger-actions {margin-top:8px}
+.ledger-actions {display:flex;flex-wrap:wrap;gap:6px}
+@media(min-width:801px){.results-view #analysis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.tier-line{grid-template-columns:1fr 1fr}.tier-line button{grid-column:1/-1}.work-tools{gap:2px}.work-tools button{padding-inline:8px}}

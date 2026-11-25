@@ -16,7 +16,10 @@
     const response = await fetch(base + path, {signal: AbortSignal.any([signal, AbortSignal.timeout(12000)])});
     if (!response.ok) throw Error(response.status === 429 ? 'Provider rate limit reached. Try again in a minute.' : 'Provider unavailable. Try Refresh.');
     const data = await response.json();
-    if (data.house?.region !== 'us' || data.house.house_id !== 114 || data.house.house_key !== 6)
+    const houseMatches = path.endsWith('/auctions')
+      ? Array.isArray(data.rows) && data.rows.every(row => row.house_id === 114 && row.house_key === 6)
+      : data.house?.region === 'us' && data.house.house_id === 114 && data.house.house_key === 6;
+    if (!houseMatches)
       throw Error('The provider returned a different auction house.');
     return data;
   }
@@ -35,21 +38,6 @@
       const row = rows.get(key(target.name));
       if (row?.selected && validPrice(row.quote)) target.owner[target.field] = money(row.quote);
     }
-  }
-
-  // Find the first copper price that covers the batch, using the calculator’s per-sale AH rounding.
-  function breakEven(estimate, fee) {
-    const required = Math.ceil((estimate.cost + estimate.expenses) / estimate.units);
-    if (!required) return 0;
-    let low = 0;
-    let high = Math.ceil((required + 1) / (1 - fee / 100));
-    if (!Number.isSafeInteger(high)) return null;
-    while (low < high) {
-      const mid = low + Math.floor((high - low) / 2);
-      if (mid - Math.round(mid * fee / 100) >= required) high = mid;
-      else low = mid + 1;
-    }
-    return low;
   }
 
   function updateEstimate() {
@@ -137,6 +125,13 @@
         if (matches.length === 1 && data.total <= data.rows.length) {
           row.data = matches[0];
           const point = row.data.current;
+          if (Number.isSafeInteger(row.data.item?.item_id) && point && Number.isFinite(Date.parse(point.ts))) {
+            const s = active();
+            s.marketItems ??= {};
+            s.marketItems['item:' + k] = {id:row.data.item.item_id, at:point.ts, low:point.quantity > 0 && validPrice(point.min_unit) ? point.min_unit : null,
+              reference:row.data.stats?.market_value, daily:row.data.stats?.sold_per_day};
+            save();
+          }
           row.quote = point?.quantity > 0 && Number.isFinite(Date.parse(point.ts)) ? point.min_unit : null;
           // Keep entered vendor prices for the sample's vendor-supplied reagents.
           const vendorPrice = ['fine thread','empty vial'].includes(k) && row.roles.size === 1 && row.roles.has('price') && row.current.size;
@@ -163,7 +158,23 @@
       $('market-items').append(note);
     }
     updateEstimate();
+    results();
   }
+
+  window.loadMarketTiers = async (name, signal) => {
+    const market = await request('/market?q=' + encodeURIComponent(name),signal);
+    const hits = market.rows.filter(row => key(row.item.name) === key(name));
+    if (hits.length !== 1 || market.total > market.rows.length) throw Error('No unique market match for this reagent.');
+    const data = await request('/items/' + hits[0].item.item_id + '/auctions',signal);
+    const levels = new Map();
+    for (const row of data.rows) {
+      if (!positive(row.unit_buyout) || !positive(row.quantity) || !positive(row.count)) continue;
+      const price = Number(row.unit_buyout);
+      levels.set(price,(levels.get(price) || 0) + Number(row.quantity) * Number(row.count));
+    }
+    if (!levels.size) throw Error('No priced listings returned for this reagent.');
+    return {at:data.as_of, tiers:[...levels].sort((a,b)=>a[0]-b[0]).map(([price,qty])=>({price:money(price),qty:String(qty)}))};
+  };
 
   $('market-open').onclick = () => { $('market-dialog').showModal(); load(); };
   $('market-refresh').onclick = load;

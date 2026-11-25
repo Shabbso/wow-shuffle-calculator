@@ -26,6 +26,8 @@
 <div class="import-actions"><button value="cancel">Cancel</button><button id="apply-prices" type="button" class="primary" disabled>Apply prices</button></div>
 </form></dialog>
 <p id="import-status" role="status" hidden></p>
+<nav class="work-tools" aria-label="Planning and sales"><button data-tool="planner">Batch planner</button><button data-tool="compare">Compare shuffles</button><button data-tool="ledger">Sales ledger</button></nav>
+<dialog id="work-dialog" aria-labelledby="work-title"><div class="market-head"><h2 id="work-title"></h2><button id="work-close">Close</button></div><div id="work-body"></div></dialog>
 <p id="storage" role="status" hidden></p>
 <div class="layout"><div class="editor">
 <details id="setup"><summary>Sale &amp; batch settings <small id="setup-summary"></small></summary>
@@ -37,4 +39,4 @@
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
 <aside id="analysis" aria-label="Shuffle results"></aside></div></main>
-<script src="calc.js"></script><script src="app.js"></script><script src="market.js"></script></body></html>
+<script src="calc.js"></script><script src="app.js"></script><script src="market.js"></script><script src="workshop.js"></script></body></html>
