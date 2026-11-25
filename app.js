@@ -60,11 +60,11 @@ function ingredient(node, depth = 0) {
   return `<article class="ingredient" id="row-${node.id}" aria-label="${name}">
     <div class="ingredient-fields">${field(depth ? 'Crafting material' : 'Reagent', node.name, 'name', node.id)}
     ${field(depth ? 'Qty per recipe' : 'Qty needed', node.qty, 'qty', node.id)}
-    ${field('Buy price each', node.price, 'price', node.id)}</div>
+    ${field('Buy price each', node.price, 'price', node.id)}
+    <button type="button" class="remove" data-action="remove" data-id="${node.id}">Remove ${depth ? 'material' : 'reagent'}</button></div>
     <div class="actions">
       ${recipe ? sourceControl(node) : `<button data-action="child" data-id="${node.id}">Add crafting recipe</button>`}
       <button data-action="total" id="total-action-${node.id}" data-id="${node.id}">${node.totalPrice === undefined ? 'Use purchase total' : 'Clear purchase total'}</button>
-      <button class="remove" data-action="remove" data-id="${node.id}">Remove</button>
     </div>
     ${node.totalPrice === undefined ? '' : `<div class="bulk-price"><div class="bulk-fields">
       ${field('Purchase quantity', node.totalQty, 'totalQty', node.id)}
@@ -179,10 +179,11 @@ function render() {
 function shoppingList(s, estimate, planner = false) {
   const batchReady = positive(s.batch) && positive(s.yield) && s.ingredients.length;
   const route = batchReady && (estimate || plan(s.ingredients, Number(s.batch), {}, true));
-  if (!route) return `<section class="shopping-list"><h2>Shopping list</h2>
+  const heading = `<div class="shopping-head"><h2>Shopping list</h2>${planner ? '' : '<button type="button" data-edit-reagents>Edit reagents</button>'}</div>`;
+  if (!route) return `<section class="shopping-list">${heading}
     <p class="hint">Enter the batch and recipe quantities. For craftable reagents, add prices or choose Buy or Craft to set their source.</p></section>`;
   const purchases = groupPurchases(route.purchases);
-  return `<section class="shopping-list"><h2>Shopping list</h2>
+  return `<section class="shopping-list">${heading}
     <p class="hint">${Number(s.batch)} ${Number(s.batch) === 1 ? 'craft' : 'crafts'} for ${Number(s.batch) * Number(s.yield)} × ${escapeHtml(s.output || 'finished item')}, ${planner ? 'using the planner’s sourcing choices' : 'using your selected sources'}.</p>
     <table><thead><tr><th>Buy</th><th>Quantity</th></tr></thead><tbody>${purchases.map(item =>
       `<tr><th scope="row">${escapeHtml(item.name)}</th><td><strong>${item.units.toLocaleString()}</strong></td></tr>`).join('')}</tbody></table>
@@ -291,6 +292,13 @@ $('view').onclick = () => {
   syncView();
 };
 
+$('analysis').onclick = event => {
+  if (!event.target.closest('[data-edit-reagents]')) return;
+  $('recipe').open = true;
+  syncView();
+  ($('ingredients').querySelector('input') || $('add')).focus();
+};
+
 document.addEventListener('input', edit);
 $('saved').onchange = event => { state.active = event.target.value; save(); render(); };
 function append(shuffle) {
@@ -358,13 +366,17 @@ $('ingredients').onclick = event => {
     add(node.children);
     return;
   }
+  if (action !== 'remove') return;
   if (node.children.length && !confirm(`Remove ${node.name || 'this reagent'} and its crafting recipe?`)) return;
   const parent = all.find(parent => parent.children.includes(node));
   const siblings = parent ? parent.children : s.ingredients;
-  siblings.splice(siblings.indexOf(node), 1);
+  const index = siblings.indexOf(node);
+  siblings.splice(index, 1);
   if (parent && !siblings.length) parent.mode = 'auto';
   save();
   render();
+  const next = siblings[index] || siblings[index - 1] || parent;
+  (next ? $('row-' + next.id).querySelector('input') : $('add')).focus();
 };
 save();
 render();

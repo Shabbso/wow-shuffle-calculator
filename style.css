@@ -36,12 +36,13 @@ details[open]>summary{border-bottom:1px solid var(--line)}
 .materials{margin-top:16px}
 h3{font-size:.9rem;margin-bottom:8px}
 .ingredient{padding:13px;background:#f6f8f3;border:1px solid #d4dfd4;border-radius:8px;margin-bottom:10px}
-.ingredient-fields{display:grid;grid-template-columns:minmax(0,2fr) minmax(68px,.65fr) minmax(90px,1fr);gap:10px}
+.ingredient-fields{display:grid;grid-template-columns:minmax(0,2fr) minmax(68px,.65fr) minmax(90px,1fr) auto;align-items:end;gap:10px}
 .actions{margin-top:10px;flex-wrap:wrap}
 .actions button{min-height:34px}
 .source{flex-direction:row;gap:6px}
 .source select{font-size:.82rem;min-height:34px;width:auto}
-.remove{margin-left:auto;color:var(--muted);background:transparent;border-color:transparent}
+.remove{color:#882f24;background:#fff9f7;border-color:#c49890;justify-self:end}
+.remove:hover{color:#72251c;background:#fbe6e2;border-color:#ab655b}
 .hint{font-size:.84rem;color:var(--muted)}
 h2{font-size:1.15rem;margin-bottom:8px}
 #analysis section:first-child{background:#163d32;color:white;border:0}
@@ -80,9 +81,10 @@ thead{color:var(--muted)}
 .branch-body > .ingredient { background: #fff; }
 .subrecipe .subrecipe { margin-left: 0; }
 .comparison { margin-top: 12px; }
-@container (max-width: 450px) {
+@container (max-width: 540px) {
   .ingredient-fields { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .ingredient-fields > label:first-child { grid-column: 1 / -1; }
+  .ingredient-fields > label:first-child { grid-column:1; }
+  .ingredient-fields > .remove { grid-column:2;grid-row:1; }
 }
 .ingredient { container-type: inline-size; }
 @media(max-width:600px) {
@@ -165,3 +167,6 @@ thead{color:var(--muted)}
 .ledger-actions {display:flex;flex-wrap:wrap;gap:6px}
 @media(min-width:801px){.results-view #analysis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.tier-line{grid-template-columns:1fr 1fr}.tier-line button{grid-column:1/-1}.work-tools{gap:2px}.work-tools button{padding-inline:8px}}
+
+.shopping-head {display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.shopping-head h2 {margin:0}
