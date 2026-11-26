@@ -6,7 +6,7 @@
 <title>Shab's Shuffle Calculator</title>
 <link rel="icon" type="image/png" href="assets/biscuit-front.png">
 <link rel="preload" href="assets/shabs-script.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="style.css?v=sharp-coins">
+<link rel="stylesheet" href="style.css?v=setup-types">
 </head>
 <body>
 <header class="guild-banner">
@@ -22,7 +22,7 @@
   </div>
 </header>
 <main class="shell">
-<nav aria-label="Saved shuffles" class="library"><label>Your shuffles<select id="saved"></select></label><button id="new">New shuffle</button><button id="duplicate">Duplicate</button><button id="delete">Delete shuffle</button><button id="market-open">Market snapshot</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
+<nav aria-label="Saved setups" class="library"><label>Saved setups<select id="saved"></select></label><button id="new">New setup</button><button data-tool="organize">Organize setups</button><button id="duplicate">Duplicate</button><button id="delete">Delete shuffle</button><button id="market-open">Market snapshot</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
 <dialog id="market-dialog" aria-labelledby="market-title">
 <div class="market-head"><div><small>US · Normal · Horde</small><h2 id="market-title">Market snapshot</h2></div><button id="market-close">Close</button></div>
 <p class="hint">Hourly asking prices from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH and Blizzard’s Battle.net API</a>. Sales per day are estimates and may include cancellations.</p>
@@ -47,8 +47,8 @@
 <dialog id="work-dialog" aria-labelledby="work-title"><div class="market-head"><h2 id="work-title"></h2><button id="work-close">Close</button></div><div id="work-body"></div></dialog>
 <p id="storage" role="status" hidden></p>
 <div class="layout"><div class="editor">
-<details id="setup"><summary>Sale &amp; batch settings <small id="setup-summary"></small></summary>
-<div id="settings"></div><p class="hint">Prices accept 1g50s, 30s39c, or 7.05 for 7s 5c. Use 0c for free items.</p></details>
+<details id="setup"><summary><span id="setup-title">Sale &amp; batch settings</span> <small id="setup-summary"></small></summary>
+<div class="setup-type"><label>Setup type<select id="setup-kind"><option value="shuffle">Profit shuffle</option><option value="acquisition">Buy or craft</option></select></label></div><div id="settings"></div><p class="hint">Prices accept 1g50s, 30s39c, or 7.05 for 7s 5c. Use 0c for free items.</p></details>
 <details id="recipe" open><summary>Recipe editor</summary><div id="recipe-body">
 <p class="hint">Finished item</p>
 <h2 id="parent-name" tabindex="-1"></h2>
@@ -60,4 +60,4 @@
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
 <aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser</footer></main>
-<script src="calc.js"></script><script src="app.js?v=sharp-coins"></script><script src="market.js?v=coins-guide"></script><script src="workshop.js?v=coins-guide"></script><script src="guide.js?v=sharp-coins"></script></body></html>
+<script src="calc.js?v=setup-types"></script><script src="app.js?v=setup-types"></script><script src="market.js?v=setup-types"></script><script src="workshop.js?v=setup-types"></script><script src="guide.js?v=setup-types"></script></body></html>

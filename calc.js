@@ -63,6 +63,16 @@ function plan(items, runs, override = {}, allowUnpriced = false) {
   return cost === null || Number.isSafeInteger(cost) ? {cost, purchases, crafts} : null;
 }
 
+function acquisitionComparison(s) {
+  const units = Number(s.batch) * Number(s.yield);
+  const validQuantity = positive(s.batch) && positive(s.yield) && positive(units);
+  const quote = copper(s.buyPrice ?? '');
+  const buy = validQuantity && Number.isSafeInteger(quote * units) ? quote * units : null;
+  const craft = validQuantity && s.ingredients.length ? plan(s.ingredients, Number(s.batch)) : null;
+  const difference = s.output.trim() && buy !== null && craft ? buy - craft.cost : null;
+  return {units:validQuantity ? units : null, buy, craft, difference};
+}
+
 function summarize(shuffle, override, route) {
   const sale = copper(shuffle.sale);
   const extra = copper(shuffle.extra);

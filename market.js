@@ -25,7 +25,7 @@
   }
 
   function targets(s) {
-    return [{owner:s, field:'sale', name:s.output}, ...Array.from(nodes(s.ingredients), ({node}) =>
+    return [{owner:s, field:isAcquisition(s) ? 'buyPrice' : 'sale', name:s.output}, ...Array.from(nodes(s.ingredients), ({node}) =>
       ({owner:node, field:'price', name:node.name}))];
   }
   const key = name => name.trim().toLowerCase();
@@ -44,9 +44,16 @@
     const {rows, loading} = session;
     const proposed = structuredClone(active());
     applySelection(proposed, rows);
-    const estimate = summarize(proposed);
     const selection = [...rows.values()].filter(row => row.selected);
     $('market-apply').disabled = loading || !selection.length;
+    if (isAcquisition(proposed)) {
+      const {buy,craft,difference} = acquisitionComparison(proposed);
+      $('market-profit').innerHTML = `Buy ready-made: ${displayMoney(buy)} · Craft: ${displayMoney(craft?.cost)}. ` +
+        (difference === null ? 'Complete both prices and the recipe to compare.' : difference === 0 ? 'Both cost the same.' :
+          `${difference > 0 ? 'Crafting' : 'Buying'} saves ${displayMoney(Math.abs(difference))} this batch.`);
+      return;
+    }
+    const estimate = summarize(proposed);
     const sale = rows.get(key(proposed.output));
     const usual = sale?.data?.stats?.market_value;
     let message = estimate ? `Projected profit: ${displayMoney(Math.floor(estimate.profit / estimate.units))} per sale · ${displayMoney(estimate.profit)} per batch.` : 'Complete your recipe and sale settings to preview profit.';

@@ -15,12 +15,58 @@
     button.onclick = () => {
       $('work-title').textContent = button.textContent;
       dialog.showModal();
-      ({planner,compare,ledger})[button.dataset.tool]();
+      ({planner,compare,ledger,organize})[button.dataset.tool]();
     };
   }
 
+  function organize() {
+    body.innerHTML = '<p class="hint">Change a setup’s category or move it up or down in the saved dropdown. A shuffle’s sale price supplies its initial ready-made buy price. Changes save immediately.</p>';
+    for (const [kind,label] of setupGroups) {
+      const members = groupMembers(kind);
+      if (!members.length) continue;
+      const section = document.createElement('div');
+      section.className = 'setup-group';
+      section.innerHTML = `<h3>${label}</h3>`;
+      members.forEach((s,index) => {
+        const name = s.name || 'Untitled setup';
+        const row = document.createElement('div');
+        row.className = 'organize-row';
+        row.dataset.setupId = s.id;
+        row.innerHTML = `<strong>${escapeHtml(name)}</strong>
+          <select aria-label="Category for ${escapeHtml(name)}"><option value="shuffle">Profit shuffle</option><option value="acquisition">Buy or craft</option></select>
+          <div class="order-controls"><button data-step="-1" ${index===0?'disabled':''} aria-label="Move ${escapeHtml(name)} up">↑ Up</button>
+          <button data-step="1" ${index===members.length-1?'disabled':''} aria-label="Move ${escapeHtml(name)} down">↓ Down</button></div>`;
+        const select = row.querySelector('select');
+        select.value = kind;
+        function refresh(focusSelector) {
+          save();
+          render();
+          organize();
+          const moved = body.querySelector(`[data-setup-id="${CSS.escape(s.id)}"]`);
+          (moved.querySelector(focusSelector) || moved.querySelector('select')).focus();
+        }
+        select.onchange = () => {setKind(s, select.value); refresh('select');};
+        for (const button of row.querySelectorAll('[data-step]')) {
+          button.onclick = () => {
+            const other = members[index + Number(button.dataset.step)];
+            if (!other) return;
+            const a = state.shuffles.indexOf(s), b = state.shuffles.indexOf(other);
+            [state.shuffles[a],state.shuffles[b]] = [state.shuffles[b],state.shuffles[a]];
+            refresh(`[data-step="${button.dataset.step}"]:enabled`);
+          };
+        }
+        section.append(row);
+      });
+      body.append(section);
+    }
+  }
+
   function compare() {
-    const rows = state.shuffles.map(s => ({s,r:summarize(s)}));
+    const rows = groupMembers('shuffle').map(s => ({s,r:summarize(s)}));
+    if (!rows.length) {
+      body.innerHTML = '<p class="hint">Save a profit shuffle to compare its sale profit here.</p>';
+      return;
+    }
     rows.sort((a,b) => (b.r ? b.r.profit/b.r.units : -Infinity) - (a.r ? a.r.profit/a.r.units : -Infinity));
     body.innerHTML = `<p class="hint">Saved batches ranked by profit per finished item. Market activity comes from the last finished-item snapshot.</p>
       <div class="scroll-table"><table><thead><tr><th>Shuffle</th><th>Units</th><th>Profit each</th><th>Batch profit</th><th>Materials upfront</th><th>Est. sold/day</th><th>Market scan</th></tr></thead>
@@ -136,7 +182,8 @@
 
   function ledger(seed) {
     const s = active();
-    const estimate = seed || summarize(s);
+    const acquisition = isAcquisition(s) ? acquisitionComparison(s) : null;
+    const estimate = seed || (acquisition ? acquisition.craft && {units:acquisition.units,cost:acquisition.craft.cost,expenses:0} : summarize(s));
     const batches = state.salesBatches ??= [];
     const today = new Date();
     const date = new Date(today - today.getTimezoneOffset()*60000).toISOString().slice(0,10);

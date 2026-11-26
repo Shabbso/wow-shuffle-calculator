@@ -45,6 +45,13 @@ if (!state?.shuffles?.length) {
 }
 
 const active = () => state.shuffles.find(shuffle => shuffle.id === state.active) || state.shuffles[0];
+const isAcquisition = s => s.kind === 'acquisition';
+const setupGroups = [['shuffle','Profit shuffles'], ['acquisition','Buy or craft']];
+const groupMembers = kind => state.shuffles.filter(s => (isAcquisition(s) ? 'acquisition' : 'shuffle') === kind);
+function setKind(s, kind) {
+  if (kind === 'acquisition') s.buyPrice ??= s.sale;
+  s.kind = kind;
+}
 function save() {
   try { localStorage.setItem(key, JSON.stringify(state)); }
   catch {
@@ -138,7 +145,7 @@ function updateBranchCosts(items, runs, verdicts, ancestors = []) {
         note.textContent = `This recipe needs ${positive(required) ? required : '—'} for the batch. The unit price applies until the purchase quantity matches.`;
       }
     }
-    if (usesPurchaseTotal(node, required)) {
+    if (!isAcquisition(active()) && usesPurchaseTotal(node, required)) {
       const budget = summarize(active(), {id:node.id, mode:'buy', ancestors});
       if (budget) {
         const room = budget.profit - budget.goal;
@@ -169,7 +176,8 @@ function updateCosts() {
   const s = active();
   const verdicts = new Map();
   updateBranchCosts(s.ingredients, Number(s.batch), verdicts);
-  $('setup-summary').innerHTML = `${escapeHtml(s.batch || '—')} crafts · ${s.sale ? priceMarkup(s.sale) : 'Set sale price'} each`;
+  const price = isAcquisition(s) ? s.buyPrice : s.sale;
+  $('setup-summary').innerHTML = `${escapeHtml(s.batch || '—')} crafts · ${price ? priceMarkup(price) + ' each' : isAcquisition(s) ? 'Set buy price' : 'Set sale price'}`;
   return verdicts;
 }
 
@@ -181,8 +189,16 @@ function *nodes(items, ancestors = []) {
 }
 
 function renderMenu() {
-  $('saved').innerHTML = state.shuffles.map(shuffle =>
-    `<option value="${shuffle.id}" ${shuffle.id === active().id ? 'selected' : ''}>${escapeHtml(shuffle.name || 'Untitled shuffle')}</option>`).join('');
+  $('saved').replaceChildren();
+  for (const [kind,label] of setupGroups) {
+    const members = groupMembers(kind);
+    if (!members.length) continue;
+    const group = document.createElement('optgroup');
+    group.label = label;
+    for (const s of members) group.append(new Option(s.name || 'Untitled setup',s.id));
+    $('saved').append(group);
+  }
+  $('saved').value = active().id;
 }
 
 function render() {
@@ -190,11 +206,18 @@ function render() {
   renderMenu();
   for (const id of ['setup', 'recipe']) $(id).open = !s.collapsed?.[id];
   syncView();
-  $('settings').innerHTML = [
-    [['Shuffle name', 'name'], ['Finished item', 'output']],
-    [['Sale price per item', 'sale'], ['Crafts in batch', 'batch']],
-    [['AH cut (%)', 'fee'], ['Other costs per sale', 'extra'], ['Profit target per sale', 'target']]
-  ].map(group => `<div class="fields">${group.map(([label, name]) => field(label, s[name], name)).join('')}</div>`).join('');
+  const check = isAcquisition(s);
+  $('setup-kind').value = check ? 'acquisition' : 'shuffle';
+  $('setup-title').textContent = check ? 'Purchase & batch settings' : 'Sale & batch settings';
+  $('delete').textContent = check ? 'Delete setup' : 'Delete shuffle';
+  $('delete-current').textContent = check ? 'Delete this setup' : 'Delete this shuffle';
+  document.querySelector('[data-tool="planner"]').hidden = check;
+  const settings = [
+    [['Setup name', 'name'], ['Finished item', 'output']],
+    [check ? ['Finished item buy price each', 'buyPrice'] : ['Sale price per item', 'sale'], ['Crafts in batch', 'batch']]
+  ];
+  if (!check) settings.push([['AH cut (%)', 'fee'], ['Other costs per sale', 'extra'], ['Profit target per sale', 'target']]);
+  $('settings').innerHTML = settings.map(group => `<div class="fields">${group.map(([label, name]) => field(label, s[name] ?? '', name)).join('')}</div>`).join('');
   renderRecipe();
   results();
 }
@@ -207,7 +230,7 @@ function shoppingList(s, estimate, planner = false) {
     <p class="hint">Enter the batch and recipe quantities. For craftable reagents, add prices or choose Buy or Craft to set their source.</p></section>`;
   const purchases = groupPurchases(route.purchases);
   return `<section class="shopping-list">${heading}
-    <p class="hint">${Number(s.batch)} ${Number(s.batch) === 1 ? 'craft' : 'crafts'} for ${Number(s.batch) * Number(s.yield)} × ${escapeHtml(s.output || 'finished item')}, ${planner ? 'using the planner’s sourcing choices' : 'using your selected sources'}.</p>
+    <p class="hint">${isAcquisition(s) ? 'Shopping for' : Number(s.batch) + (Number(s.batch) === 1 ? ' craft for' : ' crafts for')} ${Number(s.batch) * Number(s.yield)} × ${escapeHtml(s.output || 'finished item')}, ${planner ? 'using the planner’s sourcing choices' : isAcquisition(s) ? 'at the compared prices' : 'using your selected sources'}.</p>
     <table><thead><tr><th>Buy</th><th>Quantity</th></tr></thead><tbody>${purchases.map(item =>
       `<tr><th scope="row">${escapeHtml(item.name)}</th><td><strong>${item.units.toLocaleString()}</strong></td></tr>`).join('')}</tbody></table>
     ${route.crafts.length ? `<h3>Craft after shopping</h3><ol>${route.crafts.map(step =>
@@ -230,9 +253,29 @@ function saleContext(s) {
     <p class="hint">Forever AH · US Normal Horde · ${new Date(market.at).toLocaleString()}</p>`;
 }
 
+function acquisitionResults(s) {
+  const {units,buy,craft,difference} = acquisitionComparison(s);
+  const verdict = difference === null ? 'Need inputs' : difference > 0 ? 'Craft' : difference < 0 ? 'Buy' : 'Either';
+  const reason = difference === null ? 'Enter the finished item, its buy price, and a priced recipe to compare both options.'
+    : difference === 0 ? 'Both options cost the same. The list shows the ready-made purchase.'
+    : `${verdict === 'Craft' ? 'Crafting' : 'Buying'} saves ${displayMoney(Math.abs(difference))} for this batch.`;
+  const route = difference > 0 ? craft : {purchases:[{name:s.output,units,cost:buy}],crafts:[]};
+  return `<section class="acquisition"><h2>Buy or craft?</h2>
+    <p class="decision"><strong class="decision-${verdict.toLowerCase().split(' ')[0]}">${verdict}</strong> ${escapeHtml(s.output || 'Finished item')}</p>
+    <p>${reason}</p>
+    <div class="metric"><span>Buy ready-made${units ? ' × ' + units : ''}</span><strong>${displayMoney(buy)}</strong></div>
+    <div class="metric"><span>Craft from materials${units ? ' × ' + units : ''}</span><strong>${displayMoney(craft?.cost)}</strong></div>
+    <p class="hint">Craft cost uses your reagent sources and whole recipe batches. This compares acquisition costs before any resale.</p></section>
+    ${difference === null ? '' : shoppingList(s,route)}`;
+}
+
 function results() {
   const verdicts = updateCosts();
   const s = active();
+  if (isAcquisition(s)) {
+    $('analysis').innerHTML = acquisitionResults(s);
+    return;
+  }
   const r = summarize(s);
   const row = (label, value, tone = '') =>
     `<div class="metric"><span>${label}</span><strong class="${tone}">${value}</strong></div>`;
@@ -330,7 +373,15 @@ function append(shuffle) {
   save();
   render();
 }
-$('new').onclick = () => append(newShuffle());
+$('new').onclick = () => {
+  append(newShuffle('New setup'));
+  $('setup-kind').focus();
+};
+$('setup-kind').onchange = event => {
+  setKind(active(),event.target.value);
+  save();
+  render();
+};
 $('duplicate').onclick = () => {
   const copy = structuredClone(active());
   copy.id = crypto.randomUUID();
@@ -344,16 +395,17 @@ $('finished-action').onclick = () => {
     $('settings').querySelector('[data-field="output"]').focus();
     return;
   }
-  if (!confirm(`Remove “${s.output}” as the finished item and clear its sale price? Your shuffle and reagents will be kept.`)) return;
+  if (!confirm(`Remove “${s.output}” as the finished item and clear its entered output prices? Your shuffle and reagents will be kept.`)) return;
   s.output = '';
   s.sale = '';
+  delete s.buyPrice;
   save();
   render();
   $('finished-action').focus();
 };
 
 function deleteShuffle() {
-  if (!confirm(`Delete the saved shuffle “${active().name || 'Untitled shuffle'}” and its recipe?`)) return;
+  if (!confirm(`Delete the saved setup “${active().name || 'Untitled shuffle'}” and its recipe?`)) return;
   state.shuffles = state.shuffles.filter(shuffle => shuffle.id !== active().id);
   if (!state.shuffles.length) state.shuffles.push(newShuffle());
   state.active = state.shuffles[0].id;
@@ -455,7 +507,7 @@ function importedPrices(text, shuffle) {
     // Equal names with different prices may refer to different item variants.
     prices.set(name, prices.has(name) && prices.get(name) !== price ? null : price);
   }
-  const candidates = [{name: shuffle.output, owner: shuffle, field: 'sale'}];
+  const candidates = [{name: shuffle.output, owner: shuffle, field: isAcquisition(shuffle) ? 'buyPrice' : 'sale'}];
   for (const {node} of nodes(shuffle.ingredients)) candidates.push({name: node.name, owner: node, field: 'price'});
   const targets = candidates.filter(target => Number.isSafeInteger(prices.get(target.name.trim().toLowerCase())));
   for (const target of targets) target.price = money(prices.get(target.name.trim().toLowerCase()));
@@ -477,7 +529,7 @@ function previewPrices() {
   try {
     const {targets, unused, skipped} = importedPrices(raw, shuffle);
     const entries = targets.map(target => `<tr><th scope="row">${escapeHtml(target.name)}<small> ${target.field === 'sale' ? '(sale)' : '(buy)'}</small></th>
-      <td>${priceMarkup(target.owner[target.field])}</td><td>${priceMarkup(target.price)}</td></tr>`).join('');
+      <td>${priceMarkup(target.owner[target.field] ?? '')}</td><td>${priceMarkup(target.price)}</td></tr>`).join('');
     preview.innerHTML = `<p><b>${escapeHtml(shuffle.name || 'Current shuffle')}</b></p>
       ${entries ? `<table><thead><tr><th>Item</th><th>Current</th><th>Imported</th></tr></thead><tbody>${entries}</tbody></table>` : '<p>No matching prices. Check the item names in this shuffle.</p>'}
       ${targets.some(t => t.owner.totalPrice !== undefined) ? '<p class="hint">This updates unit prices. A purchase total takes priority for its exact quantity.</p>' : ''}

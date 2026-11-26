@@ -287,3 +287,22 @@ button.primary:hover,#add:hover {background:#193d69}
 .guide-reference ul {padding:0 20px 0 32px}
 .guide-reference li+li {margin-top:8px}
 #guide-error {color:#932719}
+
+.setup-type {padding:12px 18px 0}
+.setup-type select {max-width:260px}
+.setup-group {padding-top:6px}
+.setup-group h3 {color:var(--blue)}
+.organize-row {display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,160px) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.organize-row strong {overflow-wrap:anywhere}
+.order-controls {display:flex;gap:4px}
+.order-controls button:disabled {opacity:.45;cursor:default}
+.decision {display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;font-size:1.1rem;font-weight:650;overflow-wrap:anywhere}
+.decision strong {padding:3px 10px;border-radius:5px;background:#e1e8ed;color:#263747;text-transform:uppercase;letter-spacing:.04em}
+.decision .decision-buy {background:#c2dffc;color:#17395a}
+.decision .decision-craft {background:#f8d994;color:#533a16}
+.acquisition .metric {margin-top:8px}
+#analysis .acquisition .hint {margin:10px 0 0}
+@media(max-width:600px) {
+  .organize-row {grid-template-columns:minmax(0,1fr) auto}
+  .organize-row strong {grid-column:1/-1}
+}
