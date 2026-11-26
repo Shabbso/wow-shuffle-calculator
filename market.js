@@ -30,7 +30,7 @@
   }
   const key = name => name.trim().toLowerCase();
   const validPrice = price => Number.isSafeInteger(price) && price > 0;
-  const priceText = value => validPrice(value) ? money(value) : '—';
+  const priceText = value => validPrice(value) ? displayMoney(value) : '—';
   const count = value => Number.isFinite(value) && value >= 0 ? value.toLocaleString(undefined,{maximumFractionDigits:1}) : '—';
 
   function applySelection(s, rows) {
@@ -49,14 +49,14 @@
     $('market-apply').disabled = loading || !selection.length;
     const sale = rows.get(key(proposed.output));
     const usual = sale?.data?.stats?.market_value;
-    let message = estimate ? `Projected profit: ${money(Math.floor(estimate.profit / estimate.units))} per sale · ${money(estimate.profit)} per batch.` : 'Complete your recipe and sale settings to preview profit.';
-    if (estimate) message += ` Break-even sale price: ${money(breakEven(estimate, Number(proposed.fee)))}.`;
+    let message = estimate ? `Projected profit: ${displayMoney(Math.floor(estimate.profit / estimate.units))} per sale · ${displayMoney(estimate.profit)} per batch.` : 'Complete your recipe and sale settings to preview profit.';
+    if (estimate) message += ` Break-even sale price: ${displayMoney(breakEven(estimate, Number(proposed.fee)))}.`;
     if (estimate && validPrice(usual)) {
       const typical = summarize({...proposed, sale:money(usual)});
-      if (typical) message += ` At the historical reference price of ${money(usual)}, profit is ${money(Math.floor(typical.profit / typical.units))} per sale.`;
+      if (typical) message += ` At the historical reference price of ${displayMoney(usual)}, profit is ${displayMoney(Math.floor(typical.profit / typical.units))} per sale.`;
     }
     if (targets(proposed).some(t => t.owner.totalPrice !== undefined)) message += ' Purchase totals take priority for their exact quantities.';
-    $('market-profit').textContent = message;
+    $('market-profit').innerHTML = message;
   }
 
   function drawRow(row, index) {
@@ -73,7 +73,7 @@
     const stamp = Number.isFinite(time) ? dateTime.format(time) : 'Unknown scan time';
     el.innerHTML = `<label class="market-check"><input type="checkbox" ${row.selected ? 'checked' : ''} ${validPrice(row.quote) ? '' : 'disabled'}>
       <span>${itemName} <small>· ${row.roles.has('sale') ? (row.roles.size > 1 ? 'Sale & buy' : 'Sale') : 'Buy'}</small></span></label>
-      <p class="hint">Entered: ${escapeHtml([...row.current].join(' / ') || '—')} · Scan: ${stamp}${stale ? ' · Older than 2 hours' : ''}</p>
+      <p class="hint">Entered: ${[...row.current].map(priceMarkup).join(' / ') || '—'} · Scan: ${stamp}${stale ? ' · Older than 2 hours' : ''}</p>
       <dl><div><dt>Lowest listing</dt><dd>${priceText(row.quote)}</dd></div><div><dt>Listed units</dt><dd>${count(q.current?.quantity)}</dd></div>
       <div><dt>Historical reference¹</dt><dd>${priceText(q.stats?.market_value)}</dd></div><div><dt>Est. sold / day</dt><dd>${count(q.stats?.sold_per_day)}</dd></div></dl>
       <details><summary>7-day price history</summary><div id="history-${index}" class="history-content"></div></details>`;

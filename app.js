@@ -3,6 +3,24 @@ const key = 'wow-shuffle-calculator-v1';
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char =>
   ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'})[char]);
 
+const metals = {g:'gold', s:'silver', c:'copper'};
+
+// Only decorate validated display amounts. Inputs, exports and stored prices use plain text.
+function priceMarkup(raw) {
+  const value = copper(raw);
+  if (!Number.isSafeInteger(value)) return escapeHtml(raw) || '—';
+  const text = /[gsc]/i.test(raw) ? raw.trim() : money(value);
+  return text.replace(/(\d+)(\s*)([gsc])/gi, (_, digits, gap, suffix) => {
+    const metal = metals[suffix.toLowerCase()];
+    return `<span class="coin-part">${digits}${gap}<abbr class="coin coin-${metal}" title="${metal}" aria-label="${metal}">${suffix}</abbr></span>`;
+  });
+}
+
+function displayMoney(value) {
+  if (!Number.isSafeInteger(value)) return '—';
+  return (value < 0 ? '−' : '') + priceMarkup(money(Math.abs(value)));
+}
+
 function newShuffle(name = 'New shuffle') {
   return {id: crypto.randomUUID(), name, output: '', sale: '', yield: '1',
     batch: '1', fee: '5', extra: '0c', target: '1c', ingredients: []};
@@ -23,7 +41,7 @@ let state;
 try { state = JSON.parse(localStorage.getItem(key)); } catch {}
 if (!state?.shuffles?.length) {
   const seed = example();
-  state = {active: seed.id, shuffles: [seed]};
+  state = {active: seed.id, shuffles: [seed], showGuideInvite:true};
 }
 
 const active = () => state.shuffles.find(shuffle => shuffle.id === state.active) || state.shuffles[0];
@@ -98,7 +116,7 @@ function sourceVerdict(node, difference) {
     const craft = difference > 0;
     action = craft ? 'Craft' : 'Buy';
     tone = craft ? 'craft' : 'buy';
-    reason = `${craft ? 'Crafting' : 'Buying'} saves ${money(Math.abs(difference))} this batch.`;
+    reason = `${craft ? 'Crafting' : 'Buying'} saves ${displayMoney(Math.abs(difference))} this batch.`;
     if (node.mode !== 'auto' && node.mode !== tone) {
       reason += ` Your selected source is ${node.mode === 'buy' ? 'Buy' : 'Craft'}.`;
     }
@@ -115,7 +133,7 @@ function updateBranchCosts(items, runs, verdicts, ancestors = []) {
       const note = $('total-note-' + node.id);
       if (usesPurchaseTotal(node, required)) {
         const cost = copper(node.totalPrice);
-        note.textContent = Number.isSafeInteger(cost) ? `Buying ${required} here costs ${money(cost)} in total.` : 'Enter the AH total in gold, silver or copper.';
+        note.innerHTML = Number.isSafeInteger(cost) ? `Buying ${required} here costs ${displayMoney(cost)} in total.` : 'Enter the AH total in gold, silver or copper.';
       } else {
         note.textContent = `This recipe needs ${positive(required) ? required : '—'} for the batch. The unit price applies until the purchase quantity matches.`;
       }
@@ -124,7 +142,7 @@ function updateBranchCosts(items, runs, verdicts, ancestors = []) {
       const budget = summarize(active(), {id:node.id, mode:'buy', ancestors});
       if (budget) {
         const room = budget.profit - budget.goal;
-        $('total-note-' + node.id).textContent += ` ${room >= 0 ? 'Within budget' : 'Over budget'} by ${money(Math.abs(room))} against your profit target.`;
+        $('total-note-' + node.id).insertAdjacentHTML('beforeend', ` ${room >= 0 ? 'Within budget' : 'Over budget'} by ${displayMoney(Math.abs(room))} against your profit target.`);
       }
     }
     if (!node.children.length) continue;
@@ -141,8 +159,8 @@ function updateBranchCosts(items, runs, verdicts, ancestors = []) {
     const label = positive(quantity) ? quantity : '—';
     const buyQuote = hasTotal ? buy?.cost : copper(node.price) * quantity;
     const craftQuote = hasTotal ? craft : plan(node.children, 1);
-    $('cost-' + node.id).innerHTML = `${verdict}<div class="quotes"><div>Buy ${label} ready-made<strong>${positive(quantity) && Number.isSafeInteger(buyQuote) ? money(buyQuote) : 'Needs price'}</strong></div>
-      <div>Craft ${label} from materials<strong>${positive(quantity) && craftQuote ? money(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>`;
+    $('cost-' + node.id).innerHTML = `${verdict}<div class="quotes"><div>Buy ${label} ready-made<strong>${positive(quantity) && Number.isSafeInteger(buyQuote) ? displayMoney(buyQuote) : 'Needs price'}</strong></div>
+      <div>Craft ${label} from materials<strong>${positive(quantity) && craftQuote ? displayMoney(craftQuote.cost) : 'Needs recipe inputs'}</strong></div></div>`;
     updateBranchCosts(node.children, Math.ceil(required / Number(node.yield)), verdicts, [...ancestors, node.id]);
   }
 }
@@ -151,7 +169,7 @@ function updateCosts() {
   const s = active();
   const verdicts = new Map();
   updateBranchCosts(s.ingredients, Number(s.batch), verdicts);
-  $('setup-summary').textContent = `${s.batch || '—'} crafts · ${s.sale || 'Set sale price'} each`;
+  $('setup-summary').innerHTML = `${escapeHtml(s.batch || '—')} crafts · ${s.sale ? priceMarkup(s.sale) : 'Set sale price'} each`;
   return verdicts;
 }
 
@@ -206,9 +224,9 @@ function saleContext(s) {
   const market = outputMarket(s);
   if (!market) return '<p class="hint">Open Market snapshot for the latest listing and historical reference.</p>';
   const typical = Number.isSafeInteger(market.reference) ? summarize({...s, sale:money(market.reference)}) : null;
-  return `<div class="metric"><span>Lowest listing</span><strong>${money(market.low)}</strong></div>
-    <div class="metric"><span>Historical reference</span><strong>${money(market.reference)}</strong></div>
-    ${typical ? `<p class="hint">Estimated profit at that price is ${money(Math.floor(typical.profit / typical.units))} per sale after costs.</p>` : ''}
+  return `<div class="metric"><span>Lowest listing</span><strong>${displayMoney(market.low)}</strong></div>
+    <div class="metric"><span>Historical reference</span><strong>${displayMoney(market.reference)}</strong></div>
+    ${typical ? `<p class="hint">Estimated profit at that price is ${displayMoney(Math.floor(typical.profit / typical.units))} per sale after costs.</p>` : ''}
     <p class="hint">Forever AH · US Normal Horde · ${new Date(market.at).toLocaleString()}</p>`;
 }
 
@@ -218,7 +236,7 @@ function results() {
   const r = summarize(s);
   const row = (label, value, tone = '') =>
     `<div class="metric"><span>${label}</span><strong class="${tone}">${value}</strong></div>`;
-  const signed = (label, value) => row(label, money(value), value > 0 ? 'gain' : value < 0 ? 'loss' : '');
+  const signed = (label, value) => row(label, displayMoney(value), value > 0 ? 'gain' : value < 0 ? 'loss' : '');
   const choices = [...nodes(s.ingredients)].filter(({node}) => node.children.length);
   const comparisons = choices.map(({node, ancestors}) => {
     const craft = summarize(s, {id: node.id, ancestors, mode: 'craft'});
@@ -226,7 +244,7 @@ function results() {
     const outcome = scenario => {
       if (!scenario) return 'Unavailable';
       if (scenario.profit === 0) return 'Break-even';
-      return `${money(Math.abs(scenario.profit))} ${scenario.profit < 0 ? 'loss' : 'profit'}`;
+      return `${displayMoney(Math.abs(scenario.profit))} ${scenario.profit < 0 ? 'loss' : 'profit'}`;
     };
     const parent = ancestors.length ? choices.find(entry => entry.node.id === ancestors.at(-1)).node : null;
     return `<div class="source-choice">
@@ -240,21 +258,21 @@ function results() {
     <div class="profit">${signed('Batch profit', r.profit)}</div>
     <p class="hint">Sell ${r.units} × ${escapeHtml(s.output || 'finished product')}</p>
     ${signed('Average profit per sale', Math.floor(r.profit / r.units))}
-    ${row('Sale proceeds after AH cut', money(r.proceeds))}
-    ${row('Batch material cost', money(r.cost))}
-    ${row('Other batch costs', money(r.expenses))}
+    ${row('Sale proceeds after AH cut', displayMoney(r.proceeds))}
+    ${row('Batch material cost', displayMoney(r.cost))}
+    ${row('Other batch costs', displayMoney(r.expenses))}
     <details class="sale-context"><summary>Sale price check</summary>
-      ${row('Break-even per sale', money(breakEven(r, Number(s.fee))))}
-      ${row('Entered sale price', money(copper(s.sale)))}
+      ${row('Break-even per sale', displayMoney(breakEven(r, Number(s.fee))))}
+      ${row('Entered sale price', displayMoney(copper(s.sale)))}
       ${saleContext(s)}</details>
     <p class="target ${r.profit >= r.goal ? 'gain' : 'loss'}">${r.profit >= r.goal ? 'Meets profit target' : 'Below profit target'}</p>
     ` : '<p class="hint">Enter valid prices and quantities for a complete buy or craft path.</p>'}</section>
     ${shoppingList(s, r)}
     ${comparisons ? `<section><h2>Craft vs. buy</h2>${comparisons}</section>` : ''}
-    ${r ? `<section><h2>Maximum buy prices</h2><p class="hint">Ceiling per item for ${money(copper(s.target))} profit per sale. Each ceiling assumes the other prices and sources stay fixed.</p>
+    ${r ? `<section><h2>Maximum buy prices</h2><p class="hint">Ceiling per item for ${displayMoney(copper(s.target))} profit per sale. Each ceiling assumes the other prices and sources stay fixed.</p>
       <table><thead><tr><th>Item</th><th>Batch qty</th><th>Max each</th><th>Max total</th></tr></thead><tbody>
       ${ceilings(r).map(row => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.units}</td>
-      <td>${row.ceiling < 0 ? 'No viable price' : money(row.ceiling)}</td><td>${row.maxTotal < 0 ? '—' : money(row.maxTotal)}</td></tr>`).join('')}</tbody></table>
+      <td>${row.ceiling < 0 ? 'No viable price' : displayMoney(row.ceiling)}</td><td>${row.maxTotal < 0 ? '—' : displayMoney(row.maxTotal)}</td></tr>`).join('')}</tbody></table>
       <p class="hint">Batch costs include whole reagent crafts. Leftovers have zero resale value.</p>
     </section>` : ''}`;
 }
@@ -459,7 +477,7 @@ function previewPrices() {
   try {
     const {targets, unused, skipped} = importedPrices(raw, shuffle);
     const entries = targets.map(target => `<tr><th scope="row">${escapeHtml(target.name)}<small> ${target.field === 'sale' ? '(sale)' : '(buy)'}</small></th>
-      <td>${escapeHtml(target.owner[target.field]) || '—'}</td><td>${target.price}</td></tr>`).join('');
+      <td>${priceMarkup(target.owner[target.field])}</td><td>${priceMarkup(target.price)}</td></tr>`).join('');
     preview.innerHTML = `<p><b>${escapeHtml(shuffle.name || 'Current shuffle')}</b></p>
       ${entries ? `<table><thead><tr><th>Item</th><th>Current</th><th>Imported</th></tr></thead><tbody>${entries}</tbody></table>` : '<p>No matching prices. Check the item names in this shuffle.</p>'}
       ${targets.some(t => t.owner.totalPrice !== undefined) ? '<p class="hint">This updates unit prices. A purchase total takes priority for its exact quantity.</p>' : ''}

@@ -27,8 +27,8 @@
       <tbody>${rows.map(({s,r}) => {
         const market=outputMarket(s);
         return `<tr><th><button class="text-button" data-shuffle="${s.id}">${escapeHtml(s.name || 'Untitled shuffle')}</button></th>
-          <td>${number(Number(s.batch)*Number(s.yield))}</td><td>${money(r && Math.floor(r.profit/r.units))}</td><td>${money(r?.profit)}</td>
-          <td>${money(r?.cost)}</td><td>${number(market?.daily)}</td><td>${stamp(market?.at)}</td></tr>`;
+          <td>${number(Number(s.batch)*Number(s.yield))}</td><td>${displayMoney(r && Math.floor(r.profit/r.units))}</td><td>${displayMoney(r?.profit)}</td>
+          <td>${displayMoney(r?.cost)}</td><td>${number(market?.daily)}</td><td>${stamp(market?.at)}</td></tr>`;
       }).join('')}</tbody></table></div>`;
     body.querySelectorAll('[data-shuffle]').forEach(b=>b.onclick=()=>{
       state.active=b.dataset.shuffle;active().collapsed={setup:true,recipe:true};save();render();dialog.close();
@@ -117,12 +117,12 @@
           const previous=runs===1 ? 0 : plans[runs-2]?.profit;
           return previous!==undefined && r.profit-previous < copper(s.target)*Number(s.yield);
         });
-        $('plan-message').textContent=(best.r.profit>0 ? `Highest total profit: ${money(best.r.profit)} at ${best.runs} crafts.` : 'No tested batch earns a positive profit.')+
+        $('plan-message').innerHTML=(best.r.profit>0 ? `Highest total profit: ${displayMoney(best.r.profit)} at ${best.runs} crafts.` : 'No tested batch earns a positive profit.')+
           (marginal ? ` Craft #${marginal.runs} is the first additional craft below your per-sale target.` : '')+
           (available.length<limit ? ` ${limit-available.length} batch sizes could not be supplied or priced.` : '');
         const checkpoints=[...new Set([1,5,10,20,Number(s.batch),best.runs,limit])].filter(n=>positive(n)&&n<=limit).sort((a,b)=>a-b);
         $('plan-results').innerHTML=`<table><thead><tr><th>Crafts</th><th>Material cost</th><th>Batch profit</th></tr></thead><tbody>
-          ${checkpoints.map(n=>`<tr><th>${n}</th><td>${money(plans[n-1]?.cost)}</td><td>${money(plans[n-1]?.profit)}</td></tr>`).join('')}</tbody></table>
+          ${checkpoints.map(n=>`<tr><th>${n}</th><td>${displayMoney(plans[n-1]?.cost)}</td><td>${displayMoney(plans[n-1]?.profit)}</td></tr>`).join('')}</tbody></table>
           <label>Inspect a batch<select id="plan-size">${available.map(x=>`<option value="${x.runs}" ${x===best?'selected':''}>${x.runs} crafts · ${money(x.r.profit)} profit</option>`).join('')}</select></label>
           <div id="plan-shopping"></div><button id="plan-record">Record this batch in sales ledger</button>`;
         function inspect(){selectedRuns=Number($('plan-size').value);$('plan-shopping').innerHTML=shoppingList({...s,batch:String(selectedRuns)},plans[selectedRuns-1],true);}
@@ -157,10 +157,10 @@
         const net = b.sales.reduce((sum,x)=>sum+(x.price-Math.round(x.price*b.fee/100))*x.units-x.deposit,0);
         const allocatedCost = Number(BigInt(b.cost) * BigInt(sold) / BigInt(b.units));
         const profit = net - allocatedCost;
-        return `<details class="batch-log" ${b.id===openId?'open':''}><summary>${escapeHtml(b.output)} <small>${escapeHtml(b.date)} · ${sold}/${b.units} sold · ${money(profit)} realized</small></summary>
-          <div class="ledger-form"><p>${remaining} left to sell · Batch cost <b>${money(b.cost)}</b> · AH cut ${b.fee}%</p>
+        return `<details class="batch-log" ${b.id===openId?'open':''}><summary>${escapeHtml(b.output)} <small>${escapeHtml(b.date)} · ${sold}/${b.units} sold · ${displayMoney(profit)} realized</small></summary>
+          <div class="ledger-form"><p>${remaining} left to sell · Batch cost <b>${displayMoney(b.cost)}</b> · AH cut ${b.fee}%</p>
           <p class="hint">Realized profit includes the cost of units sold and all lost deposits entered so far.</p>
-          ${b.sales.length ? `<table><thead><tr><th>Date</th><th>Sold</th><th>Price each</th><th>Lost deposit</th></tr></thead><tbody>${b.sales.map(x=>`<tr><th>${escapeHtml(x.date)}</th><td>${x.units}</td><td>${x.units?money(x.price):'—'}</td><td>${money(x.deposit)}</td></tr>`).join('')}</tbody></table>` : ''}
+          ${b.sales.length ? `<table><thead><tr><th>Date</th><th>Sold</th><th>Price each</th><th>Lost deposit</th></tr></thead><tbody>${b.sales.map(x=>`<tr><th>${escapeHtml(x.date)}</th><td>${x.units}</td><td>${x.units?displayMoney(x.price):'—'}</td><td>${displayMoney(x.deposit)}</td></tr>`).join('')}</tbody></table>` : ''}
           <form data-batch="${b.id}"><div class="tool-fields"><label>Date<input name="date" type="date" required min="${escapeHtml(b.date)}" value="${date}"></label>
           <label>Units sold<input name="units" type="number" required min="0" max="${remaining}" value="${remaining?1:0}"></label>
           <label>Sale price each<input name="price" placeholder="e.g. 1g39s"></label><label>Lost deposits (total)<input name="deposit" value="0c" required></label></div>

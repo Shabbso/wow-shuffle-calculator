@@ -6,7 +6,7 @@
 <title>Shab's Shuffle Calculator</title>
 <link rel="icon" type="image/png" href="assets/biscuit-front.png">
 <link rel="preload" href="assets/shabs-script.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="style.css?v=guild-banner">
+<link rel="stylesheet" href="style.css?v=coins-guide">
 </head>
 <body>
 <header class="guild-banner">
@@ -39,7 +39,11 @@
 <div class="import-actions"><button value="cancel">Cancel</button><button id="apply-prices" type="button" class="primary" disabled>Apply prices</button></div>
 </form></dialog>
 <p id="import-status" role="status" hidden></p>
-<nav class="work-tools" aria-label="Planning and sales"><button data-tool="planner">Batch planner</button><button data-tool="compare">Compare shuffles</button><button data-tool="ledger">Sales ledger</button></nav>
+<nav class="work-tools" aria-label="Planning and sales"><button data-tool="planner">Batch planner</button><button data-tool="compare">Compare shuffles</button><button data-tool="ledger">Sales ledger</button><button id="guide-open">Quick start</button>
+<label class="coin-toggle"><input type="checkbox" id="coin-icons"> WoW coin icons</label></nav>
+<aside id="guide-invite" hidden><div><strong>Build your first shuffle</strong><p>Try a Woolen Reagent Bag with sample prices.</p></div><button id="guide-start" class="primary">Start walkthrough</button><button id="guide-dismiss">Skip</button></aside>
+<dialog id="guide-dialog" aria-labelledby="guide-title"><div class="market-head"><div><small id="guide-step"></small><h2 id="guide-title" tabindex="-1"></h2></div><button id="guide-skip">Skip tutorial</button></div>
+<form id="guide-form"><div id="guide-content"></div><p id="guide-error" role="alert"></p><div class="guide-controls"><button type="button" id="guide-back">Back</button><button id="guide-next" class="primary" type="submit">Next</button></div></form></dialog>
 <dialog id="work-dialog" aria-labelledby="work-title"><div class="market-head"><h2 id="work-title"></h2><button id="work-close">Close</button></div><div id="work-body"></div></dialog>
 <p id="storage" role="status" hidden></p>
 <div class="layout"><div class="editor">
@@ -55,5 +59,5 @@
 <div id="yield-line"></div>
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
-<aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser</footer></main>
-<script src="calc.js"></script><script src="app.js?v=finished-item"></script><script src="market.js"></script><script src="workshop.js"></script></body></html>
+<aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser<span class="coin-credit"> · Coin artwork © Blizzard Entertainment</span></footer></main>
+<script src="calc.js"></script><script src="app.js?v=coins-guide"></script><script src="market.js?v=coins-guide"></script><script src="workshop.js?v=coins-guide"></script><script src="guide.js"></script></body></html>

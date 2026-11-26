@@ -226,3 +226,31 @@ button.primary:hover,#add:hover {background:#193d69}
   .library button {padding-inline:5px}
   #view {margin-left:0}
 }
+
+.coin-credit {display:none}
+.use-coins .coin-credit {display:inline}
+.coin-part {white-space:nowrap}
+.coin {text-decoration:none}
+.use-coins .coin {display:inline-block;width:clamp(13px,1em,24px);height:clamp(13px,1em,24px);margin-inline-start:1px;vertical-align:-.1em;background:center/contain no-repeat;overflow:hidden;text-indent:-9999px}
+.use-coins .coin-gold {background-image:url("assets/coin-gold.png")}
+.use-coins .coin-silver {background-image:url("assets/coin-silver.png")}
+.use-coins .coin-copper {background-image:url("assets/coin-copper.png")}
+.coin-toggle {display:flex;align-items:center;gap:7px;margin-inline-start:auto;padding:5px 8px;cursor:pointer;color:var(--blue)}
+.coin-toggle input {width:17px;height:17px;min-height:0;accent-color:var(--blue)}
+#guide-invite {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border:1px solid #aabbd0;border-left:4px solid var(--blue);border-radius:8px;background:var(--paper)}
+#guide-invite[hidden] {display:none}
+#guide-invite>div {flex:1 1 235px}
+#guide-invite p,#guide-step {color:var(--muted);font-size:.85rem}
+#guide-dialog {width:min(580px,calc(100% - 24px));max-height:88vh;overflow:auto;padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+#guide-dialog::backdrop {background:#102339aa}
+#guide-dialog .market-head {border-bottom:1px solid var(--line);padding-bottom:9px}
+#guide-dialog h2 {margin:2px 0}
+#guide-content>*,.guide-controls {margin-top:12px}
+.guide-controls {display:flex;align-items:center;gap:8px}
+#guide-next {margin-left:auto}
+.guide-formula,.guide-preview {padding:10px 12px;border-radius:6px;background:#eaf1f9}
+.guide-formula {font-weight:650;color:var(--blue)}
+.guide-preview p {font-size:.92rem}
+.guide-reference ul {padding:0 20px 0 32px}
+.guide-reference li+li {margin-top:8px}
+#guide-error {color:#932719}
