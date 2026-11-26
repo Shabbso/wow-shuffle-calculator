@@ -227,14 +227,47 @@ button.primary:hover,#add:hover {background:#193d69}
   #view {margin-left:0}
 }
 
-.coin-credit {display:none}
-.use-coins .coin-credit {display:inline}
+/* The rim, face and stamp scale with the amount, including at browser zoom. */
 .coin-part {white-space:nowrap}
 .coin {text-decoration:none}
-.use-coins .coin {display:inline-block;width:clamp(13px,1em,24px);height:clamp(13px,1em,24px);margin-inline-start:1px;vertical-align:-.1em;background:center/contain no-repeat;overflow:hidden;text-indent:-9999px}
-.use-coins .coin-gold {background-image:url("assets/coin-gold.png")}
-.use-coins .coin-silver {background-image:url("assets/coin-silver.png")}
-.use-coins .coin-copper {background-image:url("assets/coin-copper.png")}
+.use-coins .coin {
+  position:relative;
+  display:inline-block;
+  width:clamp(12px,.95em,25px);
+  aspect-ratio:1;
+  margin-inline:.12em .02em;
+  vertical-align:-.11em;
+  border-radius:50%;
+  background:linear-gradient(140deg,var(--glint) 6%,var(--metal) 38%,var(--shade) 78%,var(--metal));
+  box-shadow:inset 0 0 0 1px var(--edge);
+}
+.use-coins .coin::before,.use-coins .coin::after {
+  content:"";
+  position:absolute;
+}
+.use-coins .coin::before {
+  inset:13%;
+  border-radius:50%;
+  background:linear-gradient(145deg,var(--metal),var(--glint) 48%,var(--metal) 66%,var(--shade));
+  box-shadow:0 0 0 1px var(--shade);
+}
+.use-coins .coin::after {
+  inset:31% 36%;
+  transform:rotate(35deg);
+  background:linear-gradient(110deg,var(--glint) 48%,var(--shade) 52%);
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+}
+.use-coins .coin-letter {
+  position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);
+}
+.coin-gold {--glint:#fff2a1;--metal:#eab334;--shade:#9a610c;--edge:#865418}
+.coin-silver {--glint:#f5f9ff;--metal:#bac9d6;--shade:#738394;--edge:#526277}
+.coin-copper {--glint:#ffcca2;--metal:#d58855;--shade:#935032;--edge:#784328}
+@media (forced-colors:active) {
+  .use-coins .coin {width:auto;aspect-ratio:auto;margin:0;vertical-align:baseline}
+  .use-coins .coin::before,.use-coins .coin::after {display:none}
+  .use-coins .coin-letter {position:static;width:auto;height:auto;clip-path:none;overflow:visible}
+}
 .coin-toggle {display:flex;align-items:center;gap:7px;margin-inline-start:auto;padding:5px 8px;cursor:pointer;color:var(--blue)}
 .coin-toggle input {width:17px;height:17px;min-height:0;accent-color:var(--blue)}
 #guide-invite {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border:1px solid #aabbd0;border-left:4px solid var(--blue);border-radius:8px;background:var(--paper)}

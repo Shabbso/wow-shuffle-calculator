@@ -1,6 +1,6 @@
 (() => {
   const toggle = $('coin-icons');
-  toggle.checked = state.coinIcons === true;
+  toggle.checked = state.coinIcons !== false;
   document.documentElement.classList.toggle('use-coins', toggle.checked);
   toggle.onchange = () => {
     document.documentElement.classList.toggle('use-coins', toggle.checked);

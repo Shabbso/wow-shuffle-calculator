@@ -12,7 +12,7 @@ function priceMarkup(raw) {
   const text = /[gsc]/i.test(raw) ? raw.trim() : money(value);
   return text.replace(/(\d+)(\s*)([gsc])/gi, (_, digits, gap, suffix) => {
     const metal = metals[suffix.toLowerCase()];
-    return `<span class="coin-part">${digits}${gap}<abbr class="coin coin-${metal}" title="${metal}" aria-label="${metal}">${suffix}</abbr></span>`;
+    return `<span class="coin-part">${digits}${gap}<abbr class="coin coin-${metal}" title="${metal}" aria-label="${metal}"><span class="coin-letter">${suffix}</span></abbr></span>`;
   });
 }
 
