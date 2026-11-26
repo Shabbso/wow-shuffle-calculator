@@ -129,7 +129,9 @@
       stopFeed();const controller=new AbortController();feed=controller;
       const name=itemName();$('tier-load').disabled=true;$('tier-source').textContent='Checking US Normal Horde…';
       try {
-        const group=await window.loadMarketTiers(name,controller.signal);
+        const ids = new Set([...nodes(s.ingredients)].filter(({node}) => node.name.trim().toLowerCase() === name && node.itemId).map(({node}) => node.itemId));
+        if (ids.size > 1) throw Error('Multiple item IDs share this tier name. Enter tiers manually.');
+        const group=await window.loadMarketTiers(name,controller.signal,[...ids][0]);
         if(controller.signal.aborted)return;
         settings.levels[levelsKey()]=group;invalidate();drawLevels();
       } catch(error){if(!controller.signal.aborted)$('tier-source').textContent=error.message;}

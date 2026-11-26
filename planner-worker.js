@@ -71,11 +71,11 @@ function cheapest(component, runs, budget) {
       if (!Number.isSafeInteger(spend)) continue;
       if (buy) {
         used.set(node.key,prior + buy);
-        purchases.push({name:node.name,units:buy,cost:spend});
+        purchases.push({name:node.name,itemId:node.itemId,units:buy,cost:spend});
       }
       const parts = make ? node.children.map(child => ({node:child, needed:make * Number(child.qty)})) : [];
-      if (make) crafts.push({name:node.name, runs:make, produced, needed:needed-buy,
-        materials:parts.map(p => ({name:p.node.name,units:p.needed}))});
+      if (make) crafts.push({name:node.name, itemId:node.itemId, runs:make, produced, needed:needed-buy,
+        materials:parts.map(p => ({name:p.node.name,itemId:p.node.itemId,units:p.needed}))});
       visit([...parts,...rest],cost+spend);
       if (make) crafts.pop();
       if (buy) { purchases.pop(); used.set(node.key,prior); }

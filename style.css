@@ -306,3 +306,24 @@ button.primary:hover,#add:hover {background:#193d69}
   .organize-row {grid-template-columns:minmax(0,1fr) auto}
   .organize-row strong {grid-column:1/-1}
 }
+
+#item-suggestions,#recipe-dialog {background:var(--paper);color:var(--ink);border:1px solid #9badc1;border-radius:8px;box-shadow:0 5px 18px #10233933}
+#item-suggestions {position:fixed;z-index:4;overflow:auto;overscroll-behavior:contain}
+#item-suggestions [role=option] {display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer}
+#item-suggestions [role=option]:hover,#item-suggestions [aria-selected=true] {background:#dceaf8}
+#item-suggestions small {display:block;color:var(--muted)}
+#item-suggestions p {padding:8px;font-size:.85rem}
+.suggestion-icon {width:24px;height:24px;flex:none;background:#e6ebf1;border:1px solid #b7c5d3;border-radius:4px}
+.suggestion-icon img {width:100%;height:100%;border-radius:3px}
+.game-item {color:inherit;text-decoration:underline;text-decoration-color:#8fa3b7;text-underline-offset:3px}
+.game-item:hover {text-decoration-color:currentColor}
+.game-item.uncommon {color:var(--item-uncommon,#256527)}
+.game-item.rare {color:var(--item-rare,#185fa1)}
+.game-item.epic {color:var(--item-epic,#78369a)}
+.game-item.legendary {color:var(--item-legendary,#98420a)}
+#analysis>section:first-child {--item-uncommon:#86ed83;--item-rare:#8bc5ff;--item-epic:#e0afff;--item-legendary:#ffc581}
+#recipe-dialog {width:min(530px,calc(100% - 24px));max-height:88vh;overflow:auto;padding:18px}
+#recipe-dialog::backdrop {background:#102339aa}
+#lookup-body>* {margin-top:10px}
+.recipe-replace {display:flex;align-items:center;gap:8px}
+.recipe-replace input {width:16px;min-height:16px}

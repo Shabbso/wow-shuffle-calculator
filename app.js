@@ -62,7 +62,8 @@ function save() {
 
 function field(label, value, fieldName, id = '') {
   const numeric = ['qty', 'yield', 'batch', 'fee', 'totalQty'].includes(fieldName);
-  return `<label>${label}<input data-field="${fieldName}" data-id="${id}" value="${escapeHtml(value)}"
+  const picker = fieldName === 'output' || (fieldName === 'name' && id);
+  return `<label>${label}<input ${picker ? 'role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="item-suggestions" placeholder="Type an item name"' : ''} data-field="${fieldName}" data-id="${id}" value="${escapeHtml(value)}"
     ${numeric ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
 }
 
@@ -89,6 +90,7 @@ function ingredient(node, depth = 0) {
     <button type="button" class="remove" data-action="remove" data-id="${node.id}">Remove ${depth ? 'material' : 'reagent'}</button></div>
     <div class="actions">
       ${recipe ? sourceControl(node) : `<button data-action="child" data-id="${node.id}">Add crafting recipe</button>`}
+      <button type="button" data-recipe-for="${node.id}">${recipeButtonLabel(node.name,node.itemId)}</button>
       <button data-action="total" id="total-action-${node.id}" data-id="${node.id}">${node.totalPrice === undefined ? 'Use purchase total' : 'Clear purchase total'}</button>
     </div>
     ${node.totalPrice === undefined ? '' : `<div class="bulk-price"><div class="bulk-fields">
@@ -101,7 +103,8 @@ function ingredient(node, depth = 0) {
 }
 
 function showFinishedItem(output) {
-  $('parent-name').textContent = output.trim() || 'No finished item';
+  $('parent-name').innerHTML = itemLink(output.trim() || 'No finished item',active().itemId);
+  document.querySelector('[data-recipe-for=""]').textContent = recipeButtonLabel(output,active().itemId);
   $('finished-action').textContent = output.trim() ? 'Remove finished item' : 'Set finished item';
 }
 
@@ -129,7 +132,7 @@ function sourceVerdict(node, difference) {
     }
   }
   return `<div class="source-verdict ${tone}"><div class="source-title"><strong>${action}</strong>
-    <b>${escapeHtml(node.name || 'Unnamed reagent')}</b></div><p>${reason}</p></div>`;
+    <b>${itemLink(node.name || 'Unnamed reagent', node.itemId)}</b></div><p>${reason}</p></div>`;
 }
 
 function updateBranchCosts(items, runs, verdicts, ancestors = []) {
@@ -230,17 +233,18 @@ function shoppingList(s, estimate, planner = false) {
     <p class="hint">Enter the batch and recipe quantities. For craftable reagents, add prices or choose Buy or Craft to set their source.</p></section>`;
   const purchases = groupPurchases(route.purchases);
   return `<section class="shopping-list">${heading}
-    <p class="hint">${isAcquisition(s) ? 'Shopping for' : Number(s.batch) + (Number(s.batch) === 1 ? ' craft for' : ' crafts for')} ${Number(s.batch) * Number(s.yield)} × ${escapeHtml(s.output || 'finished item')}, ${planner ? 'using the planner’s sourcing choices' : isAcquisition(s) ? 'at the compared prices' : 'using your selected sources'}.</p>
+    <p class="hint">${isAcquisition(s) ? 'Shopping for' : Number(s.batch) + (Number(s.batch) === 1 ? ' craft for' : ' crafts for')} ${Number(s.batch) * Number(s.yield)} × ${itemLink(s.output || 'finished item', s.itemId)}, ${planner ? 'using the planner’s sourcing choices' : isAcquisition(s) ? 'at the compared prices' : 'using your selected sources'}.</p>
     <table><thead><tr><th>Buy</th><th>Quantity</th></tr></thead><tbody>${purchases.map(item =>
-      `<tr><th scope="row">${escapeHtml(item.name)}</th><td><strong>${item.units.toLocaleString()}</strong></td></tr>`).join('')}</tbody></table>
+      `<tr><th scope="row">${itemLink(item.name, item.itemId)}</th><td><strong>${item.units.toLocaleString()}</strong></td></tr>`).join('')}</tbody></table>
     ${route.crafts.length ? `<h3>Craft after shopping</h3><ol>${route.crafts.map(step =>
-      `<li><strong>${step.produced} × ${escapeHtml(step.name)}</strong>
-        <span>${step.produced !== step.runs ? `${step.runs} ${step.runs === 1 ? 'craft' : 'crafts'} · ` : ''}Use ${step.materials.map(m => `${m.units} × ${escapeHtml(m.name)}`).join(' + ')}${step.produced > step.needed ? ` · ${step.produced - step.needed} left over` : ''}</span></li>`).join('')}</ol>` : ''}
+      `<li><strong>${step.produced} × ${itemLink(step.name, step.itemId)}</strong>
+        <span>${step.produced !== step.runs ? `${step.runs} ${step.runs === 1 ? 'craft' : 'crafts'} · ` : ''}Use ${step.materials.map(m => `${m.units} × ${itemLink(m.name, m.itemId)}`).join(' + ')}${step.produced > step.needed ? ` · ${step.produced - step.needed} left over` : ''}</span></li>`).join('')}</ol>` : ''}
   </section>`;
 }
 
 function outputMarket(s) {
-  return s.marketItems?.['item:' + s.output.trim().toLowerCase()];
+  const cached = s.marketItems?.['item:' + s.output.trim().toLowerCase()];
+  return s.marketItems?.['item:id:' + s.itemId] || (s.itemId && cached?.id !== s.itemId ? undefined : cached);
 }
 
 function saleContext(s) {
@@ -259,9 +263,9 @@ function acquisitionResults(s) {
   const reason = difference === null ? 'Enter the finished item, its buy price, and a priced recipe to compare both options.'
     : difference === 0 ? 'Both options cost the same. The list shows the ready-made purchase.'
     : `${verdict === 'Craft' ? 'Crafting' : 'Buying'} saves ${displayMoney(Math.abs(difference))} for this batch.`;
-  const route = difference > 0 ? craft : {purchases:[{name:s.output,units,cost:buy}],crafts:[]};
+  const route = difference > 0 ? craft : {purchases:[{name:s.output,itemId:s.itemId,units,cost:buy}],crafts:[]};
   return `<section class="acquisition"><h2>Buy or craft?</h2>
-    <p class="decision"><strong class="decision-${verdict.toLowerCase().split(' ')[0]}">${verdict}</strong> ${escapeHtml(s.output || 'Finished item')}</p>
+    <p class="decision"><strong class="decision-${verdict.toLowerCase().split(' ')[0]}">${verdict}</strong> ${itemLink(s.output || 'Finished item',s.itemId)}</p>
     <p>${reason}</p>
     <div class="metric"><span>Buy ready-made${units ? ' × ' + units : ''}</span><strong>${displayMoney(buy)}</strong></div>
     <div class="metric"><span>Craft from materials${units ? ' × ' + units : ''}</span><strong>${displayMoney(craft?.cost)}</strong></div>
@@ -299,7 +303,7 @@ function results() {
   }).join('');
   $('analysis').innerHTML = `<section><h2>Profit estimate</h2>${r ? `
     <div class="profit">${signed('Batch profit', r.profit)}</div>
-    <p class="hint">Sell ${r.units} × ${escapeHtml(s.output || 'finished product')}</p>
+    <p class="hint">Sell ${r.units} × ${itemLink(s.output || 'finished product', s.itemId)}</p>
     ${signed('Average profit per sale', Math.floor(r.profit / r.units))}
     ${row('Sale proceeds after AH cut', displayMoney(r.proceeds))}
     ${row('Batch material cost', displayMoney(r.cost))}
@@ -314,7 +318,7 @@ function results() {
     ${comparisons ? `<section><h2>Craft vs. buy</h2>${comparisons}</section>` : ''}
     ${r ? `<section><h2>Maximum buy prices</h2><p class="hint">Ceiling per item for ${displayMoney(copper(s.target))} profit per sale. Each ceiling assumes the other prices and sources stay fixed.</p>
       <table><thead><tr><th>Item</th><th>Batch qty</th><th>Max each</th><th>Max total</th></tr></thead><tbody>
-      ${ceilings(r).map(row => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.units}</td>
+      ${ceilings(r).map(row => `<tr><th scope="row">${itemLink(row.name, row.itemId)}</th><td>${row.units}</td>
       <td>${row.ceiling < 0 ? 'No viable price' : displayMoney(row.ceiling)}</td><td>${row.maxTotal < 0 ? '—' : displayMoney(row.maxTotal)}</td></tr>`).join('')}</tbody></table>
       <p class="hint">Batch costs include whole reagent crafts. Leftovers have zero resale value.</p>
     </section>` : ''}`;
@@ -326,10 +330,19 @@ function edit(event) {
   const s = active();
   const node = id ? [...nodes(s.ingredients)].find(({node}) => node.id === id)?.node : s;
   if (!node) return;
+  if ((id && field === 'name') || (!id && field === 'output')) {
+    if (node[field].trim().toLowerCase() !== event.target.value.trim().toLowerCase()) {
+      delete node.itemId;
+      delete node.catalogRecipeId;
+    }
+  }
   node[field] = event.target.value;
   save();
   if (!id && field === 'output') showFinishedItem(node.output);
-  if (id && field === 'name') $('row-' + id).setAttribute('aria-label', node.name || 'New reagent');
+  if (id && field === 'name') {
+    $('row-' + id).setAttribute('aria-label', node.name || 'New reagent');
+    document.querySelector(`[data-recipe-for="${id}"]`).textContent = recipeButtonLabel(node.name,node.itemId);
+  }
   if (!id && field === 'name') renderMenu();
   results();
 }
@@ -396,6 +409,8 @@ $('finished-action').onclick = () => {
     return;
   }
   if (!confirm(`Remove “${s.output}” as the finished item and clear its entered output prices? Your shuffle and reagents will be kept.`)) return;
+  delete s.itemId;
+  delete s.catalogRecipeId;
   s.output = '';
   s.sale = '';
   delete s.buyPrice;
@@ -509,10 +524,17 @@ function importedPrices(text, shuffle) {
   }
   const candidates = [{name: shuffle.output, owner: shuffle, field: isAcquisition(shuffle) ? 'buyPrice' : 'sale'}];
   for (const {node} of nodes(shuffle.ingredients)) candidates.push({name: node.name, owner: node, field: 'price'});
-  const targets = candidates.filter(target => Number.isSafeInteger(prices.get(target.name.trim().toLowerCase())));
+  const ids = idsByName(candidates.map(target => ({name:target.name, itemId:target.owner.itemId})));
+  const targets = candidates.filter(target => {
+    const key = target.name.trim().toLowerCase();
+    return ids.get(key) !== null && Number.isSafeInteger(prices.get(key));
+  });
   for (const target of targets) target.price = money(prices.get(target.name.trim().toLowerCase()));
   const used = new Set(targets.map(target => target.name.trim().toLowerCase()));
-  const unused = [...prices.keys()].filter(name => !used.has(name)).map(name => prices.get(name) === null ? name + ' (conflicting prices)' : name);
+  const unused = [...prices.keys()].filter(name => !used.has(name)).map(name => {
+    if (ids.get(name) === null) return name + ' (multiple item IDs in this setup)';
+    return prices.get(name) === null ? name + ' (conflicting prices)' : name;
+  });
   return {targets, unused, skipped};
 }
 

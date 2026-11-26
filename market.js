@@ -1,20 +1,26 @@
 // Forever AH house key 6 maps to US house 114. Verify each reply before using it.
 (() => {
-  const base = 'https://forever-ah.com/v1/houses/6';
   let session;
   let nextRequest = 0;
   const dateTime = new Intl.DateTimeFormat(undefined, {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
   });
 
-  async function request(path, signal) {
-    // All lookups and history requests share the provider's one-request-per-second pace.
-    const start = Math.max(Date.now(), nextRequest);
-    nextRequest = start + 1050;
-    if (start > Date.now()) await new Promise(resolve => setTimeout(resolve, start - Date.now()));
+  async function fetchForever(path, signal) {
     signal.throwIfAborted();
-    const response = await fetch(base + path, {signal: AbortSignal.any([signal, AbortSignal.timeout(12000)])});
-    if (!response.ok) throw Error(response.status === 429 ? 'Provider rate limit reached. Try again in a minute.' : 'Provider unavailable. Try Refresh.');
+    while (nextRequest > Date.now()) {
+      await new Promise(resolve => setTimeout(resolve, nextRequest - Date.now()));
+      signal.throwIfAborted();
+    }
+    nextRequest = Date.now() + 1050;
+    const response = await fetch('https://forever-ah.com/v1' + path, {signal: AbortSignal.any([signal, AbortSignal.timeout(12000)])});
+    if (response.status === 429) nextRequest = Math.max(nextRequest, Date.now() + 1000 * (Number(response.headers.get('Retry-After')) || 5));
+    if (!response.ok) throw Error(response.status === 429 ? 'Provider rate limit reached. Try again in a minute.' : 'Provider unavailable. Try again later.');
+    return response;
+  }
+  window.catalogFetch = fetchForever;
+  async function request(path, signal) {
+    const response = await fetchForever('/houses/6' + path, signal);
     const data = await response.json();
     const houseMatches = path.endsWith('/auctions')
       ? Array.isArray(data.rows) && data.rows.every(row => row.house_id === 114 && row.house_key === 6)
@@ -29,13 +35,14 @@
       ({owner:node, field:'price', name:node.name}))];
   }
   const key = name => name.trim().toLowerCase();
+  const targetKey = target => positive(target.owner.itemId) ? 'id:' + target.owner.itemId : key(target.name);
   const validPrice = price => Number.isSafeInteger(price) && price > 0;
   const priceText = value => validPrice(value) ? displayMoney(value) : '—';
   const count = value => Number.isFinite(value) && value >= 0 ? value.toLocaleString(undefined,{maximumFractionDigits:1}) : '—';
 
   function applySelection(s, rows) {
     for (const target of targets(s)) {
-      const row = rows.get(key(target.name));
+      const row = rows.get(targetKey(target));
       if (row?.selected && validPrice(row.quote)) target.owner[target.field] = money(row.quote);
     }
   }
@@ -54,7 +61,7 @@
       return;
     }
     const estimate = summarize(proposed);
-    const sale = rows.get(key(proposed.output));
+    const sale = rows.get(targetKey({owner:proposed,name:proposed.output}));
     const usual = sale?.data?.stats?.market_value;
     let message = estimate ? `Projected profit: ${displayMoney(Math.floor(estimate.profit / estimate.units))} per sale · ${displayMoney(estimate.profit)} per batch.` : 'Complete your recipe and sale settings to preview profit.';
     if (estimate) message += ` Break-even sale price: ${displayMoney(breakEven(estimate, Number(proposed.fee)))}.`;
@@ -111,9 +118,9 @@
     const controller = new AbortController();
     const rows = new Map();
     for (const t of targets(active())) {
-      const k = key(t.name);
+      const k = targetKey(t);
       if (!k) continue;
-      if (!rows.has(k)) rows.set(k,{name:t.name.trim(), roles:new Set(), current:new Set(), selected:false});
+      if (!rows.has(k)) rows.set(k,{id:t.owner.itemId, name:t.name.trim(), roles:new Set(), current:new Set(), selected:false});
       rows.get(k).roles.add(t.field);
       if (t.owner[t.field]) rows.get(k).current.add(t.owner[t.field]);
     }
@@ -127,8 +134,8 @@
     for (const [k,row] of rows) {
       $('market-status').textContent = `Looking up ${row.name} (${i + 1} of ${rows.size})…`;
       try {
-        const data = await request('/market?q=' + encodeURIComponent(row.name),controller.signal);
-        const matches = data.rows.filter(r => key(r.item.name) === k);
+        const data = await request(row.id ? '/market?ids=' + Number(row.id) : '/market?q=' + encodeURIComponent(row.name),controller.signal);
+        const matches = data.rows.filter(r => row.id ? r.item.item_id === row.id : key(r.item.name) === key(row.name));
         if (matches.length === 1 && data.total <= data.rows.length) {
           row.data = matches[0];
           const point = row.data.current;
@@ -141,7 +148,7 @@
           }
           row.quote = point?.quantity > 0 && Number.isFinite(Date.parse(point.ts)) ? point.min_unit : null;
           // Keep entered vendor prices for the sample's vendor-supplied reagents.
-          const vendorPrice = ['fine thread','empty vial'].includes(k) && row.roles.size === 1 && row.roles.has('price') && row.current.size;
+          const vendorPrice = ['fine thread','empty vial'].includes(key(row.name)) && row.roles.size === 1 && row.roles.has('price') && row.current.size;
           row.selected = validPrice(row.quote) && !vendorPrice && ![...row.current].some(value => copper(value) === 0);
         } else row.error = matches.length || data.total > data.rows.length ? 'Ambiguous match. Keep the entered price.' : 'No exact listed item found.';
       } catch (error) {
@@ -168,11 +175,15 @@
     results();
   }
 
-  window.loadMarketTiers = async (name, signal) => {
-    const market = await request('/market?q=' + encodeURIComponent(name),signal);
-    const hits = market.rows.filter(row => key(row.item.name) === key(name));
-    if (hits.length !== 1 || market.total > market.rows.length) throw Error('No unique market match for this reagent.');
-    const data = await request('/items/' + hits[0].item.item_id + '/auctions',signal);
+  window.loadMarketTiers = async (name, signal, itemId) => {
+    let id = itemId;
+    if (!positive(id)) {
+      const market = await request('/market?q=' + encodeURIComponent(name),signal);
+      const hits = market.rows.filter(row => key(row.item.name) === key(name));
+      if (hits.length !== 1 || market.total > market.rows.length) throw Error('No unique market match for this reagent.');
+      id = hits[0].item.item_id;
+    }
+    const data = await request('/items/' + id + '/auctions',signal);
     const levels = new Map();
     for (const row of data.rows) {
       if (!positive(row.unit_buyout) || !positive(row.quantity) || !positive(row.count)) continue;

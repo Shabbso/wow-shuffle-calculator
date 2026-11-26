@@ -6,7 +6,7 @@
 <title>Shab's Shuffle Calculator</title>
 <link rel="icon" type="image/png" href="assets/biscuit-front.png">
 <link rel="preload" href="assets/shabs-script.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="style.css?v=setup-types">
+<link rel="stylesheet" href="style.css?v=recipe-finder">
 </head>
 <body>
 <header class="guild-banner">
@@ -42,6 +42,8 @@
 <nav class="work-tools" aria-label="Planning and sales"><button data-tool="planner">Batch planner</button><button data-tool="compare">Compare shuffles</button><button data-tool="ledger">Sales ledger</button><button id="guide-open">Quick start</button>
 <label class="coin-toggle"><input type="checkbox" id="coin-icons"> WoW coin icons</label></nav>
 <aside id="guide-invite" hidden><div><strong>Build your first shuffle</strong><p>Try a Woolen Reagent Bag with sample prices.</p></div><button id="guide-start" class="primary">Start walkthrough</button><button id="guide-dismiss">Skip</button></aside>
+<div id="item-suggestions" role="listbox" aria-label="Matching Forever items" hidden></div>
+<dialog id="recipe-dialog" aria-labelledby="lookup-title"><div class="market-head"><h2 id="lookup-title">Import recipe</h2><button id="lookup-close">Close</button></div><div id="lookup-body"></div></dialog>
 <dialog id="guide-dialog" aria-labelledby="guide-title"><div class="market-head"><div><small id="guide-step"></small><h2 id="guide-title" tabindex="-1"></h2></div><button id="guide-skip">Skip tutorial</button></div>
 <form id="guide-form"><div id="guide-content"></div><p id="guide-error" role="alert"></p><div class="guide-controls"><button type="button" id="guide-back">Back</button><button id="guide-next" class="primary" type="submit">Next</button></div></form></dialog>
 <dialog id="work-dialog" aria-labelledby="work-title"><div class="market-head"><h2 id="work-title"></h2><button id="work-close">Close</button></div><div id="work-body"></div></dialog>
@@ -53,11 +55,12 @@
 <p class="hint">Finished item</p>
 <h2 id="parent-name" tabindex="-1"></h2>
 <div class="finished-actions">
+<button type="button" data-recipe-for="">Find recipe</button>
 <button type="button" id="finished-action"></button>
 <button type="button" id="delete-current">Delete this shuffle</button>
 </div>
 <div id="yield-line"></div>
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
-<aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser</footer></main>
-<script src="calc.js?v=setup-types"></script><script src="app.js?v=setup-types"></script><script src="market.js?v=setup-types"></script><script src="workshop.js?v=setup-types"></script><script src="guide.js?v=setup-types"></script></body></html>
+<aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser · Item and recipe data from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH</a> and Blizzard’s Battle.net API · Tooltips by <a href="https://www.wowhead.com/forever/tooltips" target="_blank" rel="noopener">Wowhead</a></footer></main>
+<script src="calc.js?v=recipe-finder"></script><script src="assets/forever-catalog.js"></script><script src="catalog.js?v=recipe-finder"></script><script src="app.js?v=recipe-finder"></script><script src="market.js?v=recipe-finder"></script><script src="workshop.js?v=recipe-finder"></script><script src="guide.js?v=recipe-finder"></script><script>window.whTooltips = {colorLinks:false,iconizeLinks:false,renameLinks:false};</script><script async src="https://wow.zamimg.com/js/tooltips.js"></script></body></html>

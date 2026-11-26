@@ -40,7 +40,7 @@ function plan(items, runs, override = {}, allowUnpriced = false) {
     const buyCost = usesPurchaseTotal(node, units) ? copper(node.totalPrice) : copper(node.price) * units;
     const knownBuyCost = Number.isSafeInteger(buyCost) ? buyCost : null;
     const buy = knownBuyCost !== null || allowUnpriced
-      ? {cost: knownBuyCost, purchases: [{name: node.name, units, cost: knownBuyCost}]} : null;
+      ? {cost: knownBuyCost, purchases: [{name: node.name, itemId:node.itemId, units, cost: knownBuyCost}]} : null;
     const craftRuns = Math.ceil(units / Number(node.yield));
     const craft = node.children.length && positive(node.yield)
       ? plan(node.children, craftRuns, override, allowUnpriced) : null;
@@ -55,8 +55,8 @@ function plan(items, runs, override = {}, allowUnpriced = false) {
     purchases.push(...chosen.purchases);
     if (chosen === craft) {
       crafts.push(...craft.crafts, {
-        name: node.name, runs: craftRuns, produced: craftRuns * Number(node.yield), needed: units,
-        materials: node.children.map(child => ({name: child.name, units: craftRuns * Number(child.qty)}))
+        name: node.name, itemId:node.itemId, runs: craftRuns, produced: craftRuns * Number(node.yield), needed: units,
+        materials: node.children.map(child => ({name: child.name, itemId:child.itemId, units: craftRuns * Number(child.qty)}))
       });
     }
   }
@@ -91,15 +91,29 @@ function summarize(shuffle, override, route) {
   return {...result, proceeds, expenses, goal, units, profit: proceeds - expenses - result.cost};
 }
 
+// A name-only entry can share an identity when all identified rows agree.
+function idsByName(rows) {
+  const ids = new Map();
+  for (const row of rows) {
+    if (!row.itemId) continue;
+    const name = row.name.trim().toLowerCase();
+    ids.set(name, ids.has(name) && ids.get(name) !== row.itemId ? null : row.itemId);
+  }
+  return ids;
+}
+
 function groupPurchases(purchases) {
+  const ids = idsByName(purchases);
   const grouped = new Map();
   for (const row of purchases) {
-    const key = row.name.trim().toLowerCase();
+    const name = row.name.trim().toLowerCase();
+    const itemId = row.itemId || ids.get(name);
+    const key = itemId || name;
     const group = grouped.get(key);
     if (group) {
       group.units += row.units;
       group.cost = group.cost === null || row.cost === null ? null : group.cost + row.cost;
-    } else grouped.set(key, {...row});
+    } else grouped.set(key, itemId ? {...row, itemId} : {...row});
   }
   return [...grouped.values()];
 }
