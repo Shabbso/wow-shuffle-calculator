@@ -327,3 +327,8 @@ button.primary:hover,#add:hover {background:#193d69}
 #lookup-body>* {margin-top:10px}
 .recipe-replace {display:flex;align-items:center;gap:8px}
 .recipe-replace input {width:16px;min-height:16px}
+
+#market-label {display:block;font-weight:500;font-size:.74rem;color:var(--muted)}
+.market-selectors {display:flex;flex-wrap:wrap;gap:12px}
+.market-selectors label {flex:1 1 130px}
+.market-selectors select {width:100%}

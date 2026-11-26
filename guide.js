@@ -74,7 +74,7 @@
         <details class="guide-reference"><summary>What do the other buttons do?</summary>
         <ul><li><b>New setup</b> starts a profit shuffle or a buy-or-craft comparison. <b>Organize setups</b> changes categories and dropdown order. <b>Duplicate</b> lets you try another batch size or sale price.</li>
         <li><b>Edit inputs</b> opens the settings and recipe. <b>Edit reagents</b> takes you directly to the materials.</li>
-        <li><b>Market snapshot</b> previews US Normal Horde prices. <b>Import AH prices</b> accepts Auctionator’s exported shopping results.</li>
+        <li><b>Market snapshot</b> lets you choose a US ruleset and faction for each setup, then preview and apply prices. <b>Import AH prices</b> accepts Auctionator’s exported shopping results.</li>
         <li><b>Batch planner</b> tests quantities and price tiers. <b>Compare shuffles</b> ranks saved batches. <b>Sales ledger</b> records actual sales.</li></ul></details>`;
     }
   }

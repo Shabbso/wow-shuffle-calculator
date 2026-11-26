@@ -87,18 +87,20 @@
     const names = [...itemLabels.keys()].filter(Boolean);
     s.planner ??= {levels:{},limit:String(Math.min(250,Math.max(20,Number(s.batch)||20)))};
     const settings = s.planner;
+    const market = pricingMarket(s);
+    const prefix = marketItemPrefix(market);
     body.innerHTML = `<p>${escapeHtml(s.name || 'Untitled shuffle')}</p>
       <p class="hint">Compare whole batches using your sale price and source choices. The planner can split a reagent between buying and crafting. Entered tiers supply only their listed quantities and replace that item's unit price and purchase total in this planner.</p>
       <div class="tool-fields"><label>Test up to (crafts, 1–250)<input id="plan-limit" type="number" min="1" max="250" value="${escapeHtml(settings.limit)}"></label></div>
       <details id="tier-editor"><summary>Available quantities and prices</summary>
         <div class="tool-fields"><label>Reagent<select id="tier-item">${names.map((name,i)=>`<option value="${i}">${escapeHtml(itemLabels.get(name))}</option>`).join('')}</select></label>
         <button id="tier-load" type="button">Load AH tiers</button></div>
-        <p class="hint">US Normal Horde snapshots come from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH and Blizzard</a>. The planner prices individual units at each tier. Check stack sizes before buying.</p>
+        <p class="hint">${market.label} snapshots come from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH and Blizzard</a>. The planner prices individual units at each tier. Check stack sizes before buying.</p>
         <div id="tier-rows"></div><button id="tier-add">Add price tier</button><p class="hint" id="tier-source"></p></details>
       <button class="primary" id="plan-run">Compare batch sizes</button>
       <p id="plan-message" role="status"></p><div id="plan-results"></div>`;
     const itemName=()=>names[Number($('tier-item').value)];
-    const levelsKey=()=> 'item:' + itemName();
+    const levelsKey=()=> prefix + itemName();
     const levels=()=>settings.levels[levelsKey()] ??= {tiers:[]};
     function invalidate() {
       stopWorker();plans=null;$('plan-results').innerHTML='';$('plan-message').textContent='';save();
@@ -109,7 +111,7 @@
         <label>Available units<input type="number" min="1" data-col="qty" data-row="${i}" value="${escapeHtml(t.qty)}"></label>
         <label>Unit price<input data-col="price" data-row="${i}" value="${escapeHtml(t.price)}"></label>
         <button data-drop="${i}">Remove</button></div>`).join('');
-      $('tier-source').textContent=group.at ? 'US Normal Horde · '+stamp(group.at)+' · Available tiers from the returned listings.' : 'Without tiers, this item uses its recipe prices.';
+      $('tier-source').textContent=group.at ? market.label+' · '+stamp(group.at)+' · Available tiers from the returned listings.' : 'Without tiers, this item uses its recipe prices.';
       $('tier-load').disabled=!names.length;
       $('tier-add').disabled=!names.length;
     }
@@ -127,11 +129,11 @@
     $('tier-add').onclick=()=>{stopFeed();levels().tiers.push({qty:'',price:''});delete levels().at;invalidate();drawLevels();$('tier-rows').lastElementChild.querySelector('input').focus();};
     $('tier-load').onclick=async()=>{
       stopFeed();const controller=new AbortController();feed=controller;
-      const name=itemName();$('tier-load').disabled=true;$('tier-source').textContent='Checking US Normal Horde…';
+      const name=itemName();$('tier-load').disabled=true;$('tier-source').textContent=`Checking ${market.label}…`;
       try {
         const ids = new Set([...nodes(s.ingredients)].filter(({node}) => node.name.trim().toLowerCase() === name && node.itemId).map(({node}) => node.itemId));
         if (ids.size > 1) throw Error('Multiple item IDs share this tier name. Enter tiers manually.');
-        const group=await window.loadMarketTiers(name,controller.signal,[...ids][0]);
+        const group=await window.loadMarketTiers(name,controller.signal,[...ids][0],market);
         if(controller.signal.aborted)return;
         settings.levels[levelsKey()]=group;invalidate();drawLevels();
       } catch(error){if(!controller.signal.aborted)$('tier-source').textContent=error.message;}
@@ -144,7 +146,7 @@
       if(!positive(limit)||limit>250){$('plan-message').textContent='Choose a number of crafts from 1 to 250.';return;}
       const tierEntries=[];
       for(const name of names) {
-        const entries=settings.levels['item:'+name]?.tiers;
+        const entries=settings.levels[prefix+name]?.tiers;
         if(!entries?.length)continue;
         const tiers=entries.map(t=>({qty:Number(t.qty),price:copper(t.price)}));
         if(tiers.some(t=>!positive(t.qty)||!Number.isSafeInteger(t.price))){$('plan-message').textContent='Complete the price tiers for '+name+'.';return;}

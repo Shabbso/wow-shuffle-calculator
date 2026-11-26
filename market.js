@@ -1,4 +1,4 @@
-// Forever AH house key 6 maps to US house 114. Verify each reply before using it.
+// Capture the house for each request so a late response cannot change markets.
 (() => {
   let session;
   let nextRequest = 0;
@@ -19,16 +19,19 @@
     return response;
   }
   window.catalogFetch = fetchForever;
-  async function request(path, signal) {
-    const response = await fetchForever('/houses/6' + path, signal);
+  async function request(path, signal, house) {
+    const response = await fetchForever('/houses/' + house.key + path, signal);
     const data = await response.json();
     const houseMatches = path.endsWith('/auctions')
-      ? Array.isArray(data.rows) && data.rows.every(row => row.house_id === 114 && row.house_key === 6)
-      : data.house?.region === 'us' && data.house.house_id === 114 && data.house.house_key === 6;
+      ? Array.isArray(data.rows) && data.rows.every(row => row.house_id === house.id && row.house_key === house.key)
+      : data.house?.region === 'us' && data.house.house_id === house.id && data.house.house_key === house.key;
+    signal.throwIfAborted();
     if (!houseMatches)
       throw Error('The provider returned a different auction house.');
     return data;
   }
+
+  window.requestMarket = request;
 
   function targets(s) {
     return [{owner:s, field:isAcquisition(s) ? 'buyPrice' : 'sale', name:s.output}, ...Array.from(nodes(s.ingredients), ({node}) =>
@@ -93,14 +96,15 @@
       <details><summary>7-day price history</summary><div id="history-${index}" class="history-content"></div></details>`;
     el.querySelector('input').onchange = event => {row.selected = event.target.checked; updateEstimate();};
     const panel = el.querySelector('details');
-    const signal = session.controller.signal;
+    const {house, controller} = session;
+    const signal = controller.signal;
     panel.ontoggle = async () => {
       if (!panel.open || panel.dataset.loaded || signal.aborted) return;
       panel.dataset.loaded = 'yes';
       const out = el.querySelector('.history-content');
       out.textContent = 'Loading daily prices…';
       try {
-        const result = await request('/items/' + q.item.item_id + '/history?resolution=day', signal);
+        const result = await request('/items/' + q.item.item_id + '/history?resolution=day', signal, house);
         if (result.item?.item_id !== q.item.item_id || !Array.isArray(result.points)) throw Error('History unavailable.');
         const points = result.points.filter(p => Number.isFinite(Date.parse(p.ts))).slice(-7);
         out.innerHTML = points.length ? `<table><thead><tr><th>Day (UTC)</th><th>Low ask</th><th>Median ask</th><th>Listed units</th></tr></thead><tbody>${points.map(p =>
@@ -116,15 +120,17 @@
   async function load() {
     session?.controller.abort();
     const controller = new AbortController();
+    const s = active();
+    const house = pricingMarket(s);
     const rows = new Map();
-    for (const t of targets(active())) {
+    for (const t of targets(s)) {
       const k = targetKey(t);
       if (!k) continue;
       if (!rows.has(k)) rows.set(k,{id:t.owner.itemId, name:t.name.trim(), roles:new Set(), current:new Set(), selected:false});
       rows.get(k).roles.add(t.field);
       if (t.owner[t.field]) rows.get(k).current.add(t.owner[t.field]);
     }
-    session = {rows, controller, loading:true};
+    session = {rows, controller, house, setup:s, loading:true};
     $('market-items').replaceChildren();
     $('market-profit').textContent = '';
     $('market-apply').disabled = true;
@@ -134,15 +140,14 @@
     for (const [k,row] of rows) {
       $('market-status').textContent = `Looking up ${row.name} (${i + 1} of ${rows.size})…`;
       try {
-        const data = await request(row.id ? '/market?ids=' + Number(row.id) : '/market?q=' + encodeURIComponent(row.name),controller.signal);
+        const data = await request(row.id ? '/market?ids=' + Number(row.id) : '/market?q=' + encodeURIComponent(row.name),controller.signal,house);
         const matches = data.rows.filter(r => row.id ? r.item.item_id === row.id : key(r.item.name) === key(row.name));
         if (matches.length === 1 && data.total <= data.rows.length) {
           row.data = matches[0];
           const point = row.data.current;
           if (Number.isSafeInteger(row.data.item?.item_id) && point && Number.isFinite(Date.parse(point.ts))) {
-            const s = active();
             s.marketItems ??= {};
-            s.marketItems['item:' + k] = {id:row.data.item.item_id, at:point.ts, low:point.quantity > 0 && validPrice(point.min_unit) ? point.min_unit : null,
+            s.marketItems[marketItemPrefix(house) + k] = {id:row.data.item.item_id, at:point.ts, low:point.quantity > 0 && validPrice(point.min_unit) ? point.min_unit : null,
               reference:row.data.stats?.market_value, daily:row.data.stats?.sold_per_day};
             save();
           }
@@ -175,15 +180,15 @@
     results();
   }
 
-  window.loadMarketTiers = async (name, signal, itemId) => {
+  window.loadMarketTiers = async (name, signal, itemId, house = pricingMarket(active())) => {
     let id = itemId;
     if (!positive(id)) {
-      const market = await request('/market?q=' + encodeURIComponent(name),signal);
+      const market = await request('/market?q=' + encodeURIComponent(name),signal,house);
       const hits = market.rows.filter(row => key(row.item.name) === key(name));
       if (hits.length !== 1 || market.total > market.rows.length) throw Error('No unique market match for this reagent.');
       id = hits[0].item.item_id;
     }
-    const data = await request('/items/' + id + '/auctions',signal);
+    const data = await request('/items/' + id + '/auctions',signal,house);
     const levels = new Map();
     for (const row of data.rows) {
       if (!positive(row.unit_buyout) || !positive(row.quantity) || !positive(row.count)) continue;
@@ -194,17 +199,34 @@
     return {at:data.as_of, tiers:[...levels].sort((a,b)=>a[0]-b[0]).map(([price,qty])=>({price:money(price),qty:String(qty)}))};
   };
 
-  $('market-open').onclick = () => { $('market-dialog').showModal(); load(); };
+  const ruleset = $('market-ruleset'), faction = $('market-faction');
+  for (const name of new Set(pricingMarkets.map(h => h.ruleset))) ruleset.add(new Option(name,name));
+  for (const name of ['Horde','Alliance']) faction.add(new Option(name,name));
+  function changeMarket() {
+    const market = pricingMarkets.find(h => h.ruleset === ruleset.value && h.faction === faction.value);
+    active().marketHouseId = market.id;
+    save();
+    render();
+    load();
+  }
+  ruleset.onchange = faction.onchange = changeMarket;
+  $('market-open').onclick = () => {
+    clearPriceNotice();
+    const market = pricingMarket(active());
+    ruleset.value = market.ruleset;
+    faction.value = market.faction;
+    $('market-dialog').showModal();
+    load();
+  };
   $('market-refresh').onclick = load;
   $('market-close').onclick = () => $('market-dialog').close();
   $('market-dialog').onclose = () => session?.controller.abort();
   $('market-apply').onclick = () => {
-    if (session.loading) return;
+    if (session.loading || session.setup !== active() || session.house !== pricingMarket(active())) return;
     applySelection(active(), session.rows);
     save();
     render();
     $('market-dialog').close();
-    $('import-status').textContent = `Applied selected US Normal Horde prices to ${active().name || 'this shuffle'}.`;
-    $('import-status').hidden = false;
+    showPriceNotice(`Applied ${session.house.label} prices to ${active().name || 'this shuffle'}.`);
   };
 })();

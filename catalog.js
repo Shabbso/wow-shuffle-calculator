@@ -183,9 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let choices=catalogRecipes.get(output) || [];
     if (!choices.length) {
       try {
-        const response=await window.catalogFetch('/houses/6/crafting?q='+encodeURIComponent(name),controller.signal);
-        const data=await response.json();if(controller.signal.aborted) return;
-        if(data.house?.house_key!==6 || data.house?.house_id!==114) throw Error();
+        const data=await window.requestMarket('/crafting?q='+encodeURIComponent(name),controller.signal,pricingMarket(s));
+        if(controller.signal.aborted) return;
         for(const r of data.rows) {
           if (!positive(r.item?.item_id) || !positive(r.recipe_id) || !r.reagents?.length ||
             !r.reagents.every(p=>positive(p.item_id)&&positive(p.quantity)&&typeof p.name==='string')) continue;

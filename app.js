@@ -3,6 +3,35 @@ const key = 'wow-shuffle-calculator-v1';
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char =>
   ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'})[char]);
 
+// AvailableSuperDistrict + AuctionHouseRedirect (Forever build 1.60.1.71139)
+// identify the in-game houses. Keys are the US entries from Forever AH /v1/houses.
+const pricingMarkets = [
+  ['Normal', 'Horde', 114, 6], ['Normal', 'Alliance', 111, 3],
+  ['PvP', 'Horde', 113, 5], ['PvP', 'Alliance', 110, 2],
+  ['Roleplay', 'Horde', 120, 12], ['Roleplay', 'Alliance', 119, 11],
+  ['Roleplay PvP', 'Horde', 124, 15], ['Roleplay PvP', 'Alliance', 123, 14]
+].map(([ruleset, faction, id, key]) => ({ruleset, faction, id, key, label: `US · ${ruleset} · ${faction}`}));
+function pricingMarket(setup) {
+  return pricingMarkets.find(m => m.id === setup.marketHouseId) || pricingMarkets[0];
+}
+function marketItemPrefix(market) {
+  // Existing snapshots and planner tiers belong to US Normal Horde.
+  return market === pricingMarkets[0] ? 'item:' : 'us-' + market.id + ':item:';
+}
+
+let priceNoticeTimer;
+function clearPriceNotice() {
+  clearTimeout(priceNoticeTimer);
+  $('import-status').hidden = true;
+  $('import-status').textContent = '';
+}
+function showPriceNotice(text) {
+  clearPriceNotice();
+  $('import-status').textContent = text;
+  $('import-status').hidden = false;
+  priceNoticeTimer = setTimeout(clearPriceNotice, 6500);
+}
+
 const metals = {g:'gold', s:'silver', c:'copper'};
 
 // Only decorate validated display amounts. Inputs, exports and stored prices use plain text.
@@ -206,6 +235,8 @@ function renderMenu() {
 
 function render() {
   const s = active();
+  clearPriceNotice();
+  $('market-label').textContent = pricingMarket(s).label;
   renderMenu();
   for (const id of ['setup', 'recipe']) $(id).open = !s.collapsed?.[id];
   syncView();
@@ -243,8 +274,9 @@ function shoppingList(s, estimate, planner = false) {
 }
 
 function outputMarket(s) {
-  const cached = s.marketItems?.['item:' + s.output.trim().toLowerCase()];
-  return s.marketItems?.['item:id:' + s.itemId] || (s.itemId && cached?.id !== s.itemId ? undefined : cached);
+  const prefix = marketItemPrefix(pricingMarket(s));
+  const cached = s.marketItems?.[prefix + s.output.trim().toLowerCase()];
+  return s.marketItems?.[prefix + 'id:' + s.itemId] || (s.itemId && cached?.id !== s.itemId ? undefined : cached);
 }
 
 function saleContext(s) {
@@ -254,7 +286,7 @@ function saleContext(s) {
   return `<div class="metric"><span>Lowest listing</span><strong>${displayMoney(market.low)}</strong></div>
     <div class="metric"><span>Historical reference</span><strong>${displayMoney(market.reference)}</strong></div>
     ${typical ? `<p class="hint">Estimated profit at that price is ${displayMoney(Math.floor(typical.profit / typical.units))} per sale after costs.</p>` : ''}
-    <p class="hint">Forever AH · US Normal Horde · ${new Date(market.at).toLocaleString()}</p>`;
+    <p class="hint">Forever AH · ${pricingMarket(s).label} · ${new Date(market.at).toLocaleString()}</p>`;
 }
 
 function acquisitionResults(s) {
@@ -387,7 +419,7 @@ function append(shuffle) {
   render();
 }
 $('new').onclick = () => {
-  append(newShuffle('New setup'));
+  append({...newShuffle('New setup'), marketHouseId:pricingMarket(active()).id});
   $('setup-kind').focus();
 };
 $('setup-kind').onchange = event => {
@@ -566,7 +598,7 @@ function previewPrices() {
 }
 
 $('import-prices').onclick = () => {
-  $('import-status').hidden = true;
+  clearPriceNotice();
   $('price-csv').value = '';
   previewPrices();
   $('price-dialog').showModal();
@@ -580,6 +612,5 @@ $('apply-prices').onclick = () => {
   save();
   render();
   $('price-dialog').close();
-  $('import-status').textContent = `Applied ${targets.length} ${targets.length === 1 ? 'price' : 'prices'} to ${active().name || 'this shuffle'}.`;
-  $('import-status').hidden = false;
+  showPriceNotice(`Applied ${targets.length} ${targets.length === 1 ? 'price' : 'prices'} to ${active().name || 'this shuffle'}.`);
 };

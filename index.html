@@ -6,7 +6,7 @@
 <title>Shab's Shuffle Calculator</title>
 <link rel="icon" type="image/png" href="assets/biscuit-front.png">
 <link rel="preload" href="assets/shabs-script.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="style.css?v=recipe-finder">
+<link rel="stylesheet" href="style.css?v=market-selector">
 </head>
 <body>
 <header class="guild-banner">
@@ -22,9 +22,11 @@
   </div>
 </header>
 <main class="shell">
-<nav aria-label="Saved setups" class="library"><label>Saved setups<select id="saved"></select></label><button id="new">New setup</button><button data-tool="organize">Organize setups</button><button id="duplicate">Duplicate</button><button id="delete">Delete shuffle</button><button id="market-open">Market snapshot</button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
+<nav aria-label="Saved setups" class="library"><label>Saved setups<select id="saved"></select></label><button id="new">New setup</button><button data-tool="organize">Organize setups</button><button id="duplicate">Duplicate</button><button id="delete">Delete shuffle</button><button id="market-open">Market snapshot<small id="market-label"></small></button><button id="import-prices">Import AH prices</button><button id="view" class="primary">Show results</button></nav>
 <dialog id="market-dialog" aria-labelledby="market-title">
-<div class="market-head"><div><small>US · Normal · Horde</small><h2 id="market-title">Market snapshot</h2></div><button id="market-close">Close</button></div>
+<div class="market-head"><div><small>US auction houses</small><h2 id="market-title">Market snapshot</h2></div><button id="market-close">Close</button></div>
+<div class="market-selectors"><label>Ruleset<select id="market-ruleset"></select></label><label>Faction<select id="market-faction"></select></label></div>
+<p class="hint">This setup remembers its market. Apply selected prices to update recipe inputs.</p>
 <p class="hint">Hourly asking prices from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH and Blizzard’s Battle.net API</a>. Sales per day are estimates and may include cancellations.</p>
 <p id="market-status" role="status"></p>
 <div id="market-items"></div><p id="market-profit"></p>
@@ -63,4 +65,4 @@
 <div class="materials"><h3>Reagents for one craft</h3><div id="ingredients"></div><button id="add">+ Add reagent</button></div>
 </div></details></div>
 <aside id="analysis" aria-label="Shuffle results"></aside></div><footer class="storage-note">Recipes save in this browser · Item and recipe data from <a href="https://forever-ah.com/api/" target="_blank" rel="noopener">Forever AH</a> and Blizzard’s Battle.net API · Tooltips by <a href="https://www.wowhead.com/forever/tooltips" target="_blank" rel="noopener">Wowhead</a></footer></main>
-<script src="calc.js?v=recipe-finder"></script><script src="assets/forever-catalog.js"></script><script src="catalog.js?v=recipe-finder"></script><script src="app.js?v=recipe-finder"></script><script src="market.js?v=recipe-finder"></script><script src="workshop.js?v=recipe-finder"></script><script src="guide.js?v=recipe-finder"></script><script>window.whTooltips = {colorLinks:false,iconizeLinks:false,renameLinks:false};</script><script async src="https://wow.zamimg.com/js/tooltips.js"></script></body></html>
+<script src="calc.js?v=market-selector"></script><script src="assets/forever-catalog.js"></script><script src="catalog.js?v=market-selector"></script><script src="app.js?v=market-selector"></script><script src="market.js?v=market-selector"></script><script src="workshop.js?v=market-selector"></script><script src="guide.js?v=market-selector"></script><script>window.whTooltips = {colorLinks:false,iconizeLinks:false,renameLinks:false};</script><script async src="https://wow.zamimg.com/js/tooltips.js"></script></body></html>
